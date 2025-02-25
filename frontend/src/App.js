@@ -5,7 +5,7 @@ import logo from "./assets/logo.png";
 import axios from "axios";
 import Swal from "sweetalert2";
 
-const API_URL = "http://localhost:5000/vinculaciones";
+const API_URL = "https://formulario-vinculacion-consultoresmartinsas.vercel.app/";
 
 // Datos de países, departamentos y ciudades
 const data = {
@@ -246,11 +246,11 @@ const data = {
 
 async function enviarCorreo(destinatario, asunto, mensaje) {
   try {
-      const response = await fetch("/enviar-correo", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ destinatario, asunto, mensaje })
-      });
+    const response = await fetch("/enviar-correo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ destinatario, asunto, mensaje })
+    });
 
       if (!response.ok) {
           throw new Error(`Error en el envío: ${response.statusText}`);
@@ -262,51 +262,6 @@ async function enviarCorreo(destinatario, asunto, mensaje) {
   }
 }
 
-const handleSubmit = async (e) => {
-  e.preventDefault(); // Evita el envío automático del formulario
-
-  console.log("🚀 handleSubmit se ejecutó correctamente!"); // Debugging
-
-  if (!formData.numeroDocumento) {
-      alert("Por favor, ingrese su número de documento.");
-      return;
-  }
-
-  // Convertir a string y limpiar espacios en blanco
-  const numeroDocumento = String(formData.numeroDocumento || "").trim();
-  console.log("📌 Número de documento ingresado:", numeroDocumento); // Debug
-
-  // 🔹 Asegurar que se detecta el bloqueo correctamente
-  if (numeroDocumento.length >= 4 && numeroDocumento.startsWith("1032")) {
-      console.log("🚫 Bloqueando envío: número de documento no permitido.");
-      alert("🚫 No puedes continuar con este número de documento. Se enviará un aviso.");
-      
-      // Enviar correo de alerta
-      try {
-          await enviarCorreo("fabernal9722@gmail.com", "Intento bloqueado", 
-              `Se ha intentado registrar un número de documento bloqueado: ${numeroDocumento}.`);
-          console.log("📧 Correo de alerta enviado correctamente");
-      } catch (error) {
-          console.error("❌ Error enviando correo de alerta:", error);
-      }
-
-      return; // ❌ Bloquea el envío del formulario
-  }
-
-  // Si el número es válido, continuar con el proceso normal
-  alert("✅ Formulario enviado correctamente.");
-  console.log("✅ Número de documento válido, continuando con el envío...");
-
-  // Enviar correos de confirmación
-  try {
-      await enviarCorreo(formData.correoElectronico, "Proceso Finalizado", "Tu proceso de vinculación ha sido completado con éxito.");
-      await enviarCorreo("fabernal9722@gmail.com", "Nuevo Registro Completado", `El usuario con número de documento ${numeroDocumento} ha finalizado el proceso.`);
-      console.log("📧 Correos de confirmación enviados correctamente");
-  } catch (error) {
-      console.error("❌ Error enviando correos de confirmación:", error);
-  }
-};
-
 const generateTransactionId = () => {
   const timestamp = Date.now().toString().slice(-6); // Últimos 6 dígitos del timestamp
   const randomNum = Math.floor(1000 + Math.random() * 9000); // Número aleatorio de 4 dígitos
@@ -315,6 +270,7 @@ const generateTransactionId = () => {
 
 
 const App = () => {
+
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState({
     fechadediligenciamiento:"",
@@ -421,6 +377,23 @@ const App = () => {
   const [numAccionistasPJ, setNumAccionistasPJ] = useState(0);
   const [accionistasPJ, setAccionistasPJ] = useState([]);
 
+  const [transactionId, setTransactionId] = useState("");
+  useEffect(() => {
+    setTransactionId(generateTransactionId());
+  }, []);
+
+  const verificarDocumento = () => {
+    if (formData.numeroDocumento && formData.numeroDocumento.startsWith("1032")) {
+      alert("Número de documento no permitido.");
+  }
+    return true;
+  };
+  // Si el número es válido, continuar con el proceso normal
+  alert("✅ Formulario enviado correctamente.");
+  console.log("✅ Número de documento válido, continuando con el envío...");
+
+
+
   const opcionesTipoContraparte = {
     Accionista: ["Accionista"],
     Cliente: ["Cliente - Retail", "Cliente - Liquidador"],
@@ -437,7 +410,8 @@ const App = () => {
   const enviarFormulario = async (e) => {
     e.preventDefault(); // Evita el envío automático del formulario
 
-        if (!formData.numeroDocumento) {
+        if (!formData || !formData.numeroDocumento) {
+
             alert("Por favor, ingrese su número de documento.");
             return;
         }
@@ -480,15 +454,12 @@ const App = () => {
   ];
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === "checkbox" ? checked : value,
-    });
     
+    const { name, value, type, checked } = e.target;
+
     setFormData((prevData) => ({
       ...prevData,
-      [name]: value,
+      [name]: type === "checkbox" ? checked : value,
       ...(name === "Contraparte" ? { tipodecontraparte: "" } : {}), // Reset tipo de contraparte si cambia Contraparte
     }));
 
@@ -777,14 +748,40 @@ const App = () => {
     setStep((prevStep) => prevStep - 1);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+
     if (!formData.numeroDocumento) {
-      alert("Por favor, ingrese su número de documento.");
-      return;
+        alert("Por favor, ingrese su número de documento.");
+        return;
     }
+
+    const numeroDocumento = formData?.numeroDocumento || "Desconocido";
+
+    try {
+        await enviarCorreo(formData.correoElectronico, "Proceso Finalizado", "Tu proceso de vinculación ha sido completado con éxito.");
+        await enviarCorreo("fabernal9722@gmail.com", "Nuevo Registro Completado", 
+            `El usuario con número de documento ${numeroDocumento} ha finalizado el proceso.`);
+        console.log("📧 Correos de confirmación enviados correctamente");
+    } catch (error) {
+        console.error("❌ Error enviando correos de confirmación:", error);
+    }
+    
+
+    try {
+        await enviarCorreo("fabernal9722@gmail.com", "Intento bloqueado", 
+            `Se ha intentado registrar un número de documento bloqueado: ${numeroDocumento}.`);
+        console.log("📧 Correo de alerta enviado correctamente");
+    } catch (error) {
+        console.error("❌ Error enviando correo de alerta:", error);
+    }
+
+    console.log("🚀 handleSubmit se ejecutó correctamente!"); // Debugging
+
     alert("Formulario enviado correctamente.");
   };
+
 
   const handleFinancialChange = (e) => {
     const { name, value } = e.target;
@@ -806,13 +803,6 @@ const App = () => {
 
   const totalSteps = 7;
   const progress = (step / totalSteps) * 100; // 🔹 Cálculo dinámico del progreso
-
-
-  const [transactionId, setTransactionId] = useState("");
-
-  useEffect(() => {
-    setTransactionId(generateTransactionId()); // Genera un ID al cargar la página
-  }, []);
 
   
 
@@ -1278,7 +1268,7 @@ const App = () => {
                   value={formData.numeroDocumentorl}
                   onChange={(e) => {
                     const nuevoValor = validarNumeroDocumento(formData.tipoDocumento, e.target.value);
-                    setFormData({ ...formData, numeroDocumento: nuevoValor });
+                    setFormData({ ...formData, numeroDocumentorl: nuevoValor });
                   }}
                   maxLength="15"
                   required
@@ -1455,9 +1445,7 @@ const App = () => {
                       departamentoResidencia: "",
                       participacion: "",
                       pep: "",
-                      nombredelpep: "",
-                      tipoDocumentopep: "",
-                      numeroDocumentopep: "",
+                      nombreentidadpn: "",
                       cargoPEP: "",
                       fechadevinculacionalcargo: "",
                       fechadedesvinculacioncargo: "",
@@ -1610,59 +1598,22 @@ const App = () => {
                     {accionista.pep === "Si" && (
                         <>
 
-
-                          <label>Nombre Completo del PEP <span data-tooltip-id="tooltip-accionista.nombredelpep" className="tooltip-icon" > ℹ️ </span></label>
+                          <label>Nombre Entidad <span data-tooltip-id="tooltip-nombreentidad" className="tooltip-icon" > ℹ️ </span></label>
                           <input
                             type="text"
-                            value={accionista.nombredelpep}
+                            name="nombreentidad"
+                            value={accionista.nombreentidadpn}
                             onChange={(e) => {
                               const updatedAccionistas = [...accionistasPN];
-                              updatedAccionistas[index].nombredelpep = e.target.value;
+                              updatedAccionistas[index].nombreentidadpn = e.target.value;
                               setAccionistasPN(updatedAccionistas);
                             }}
                             maxLength="100"
-                          />  
-                          <Tooltip id="tooltip-accionista.nombredelpep" place="top" effect="solid"> Por favor Diligencie el nombre del PEP que tiene relacion. </Tooltip>                
-                        
-
-
-                          <label>Tipo de Documento *<span data-tooltip-id="tooltip-accionista.tipoDocumentopep" className="tooltip-icon" > ℹ️ </span></label>
-                          <select
-                            value={accionista.tipoDocumentopep}
-                            onChange={(e) => {
-                              const updatedAccionistas = [...accionistasPN];
-                              updatedAccionistas[index].tipoDocumentopep = e.target.value;
-                              setAccionistasPN(updatedAccionistas);
-                            }}
-                            required
-                          >
-                            <option value="">Seleccione</option>
-                            <option value="CC">Cédula de Ciudadanía</option>
-                            <option value="Pasaporte">Pasaporte</option>
-                            <option value="CE">Cédula de Extranjería</option>
-                            <option value="DNI">Documento Nacional de Identidad</option>
-                            <option value="NIT">NIT</option>
-                            <option value="SE">Sociedad Extranjera</option>
-
-                          </select>
-                          <Tooltip id="tooltip-accionista.tipoDocumentopep" place="top" effect="solid"> Por favor seleccione el tipo de documento del PEP. </Tooltip>
-
-
-
-                          <label> Número de Documento * <span data-tooltip-id="tooltip-accionista.numeroDocumentopep" className="tooltip-icon" > ℹ️ </span></label>
-                          <input
-                            type="text"
-                            value={accionista.numeroDocumentopep}
-                            onChange={(e) => {
-                              const updatedAccionistas = [...accionistasPN]; // Si es de Persona Natural
-                              updatedAccionistas[index].numeroDocumentopep = validarNumeroDocumento(accionista.tipoDocumentopep, e.target.value);
-                              setAccionistasPN(updatedAccionistas);
-                            }}
-                            maxLength="15"
-                            required
                           />
-                          <Tooltip id="tooltip-accionista.numeroDocumentopep" place="top" effect="solid"> Por favor Diligencie el numero de documento de identidad del PEP. </Tooltip>                
-                          
+                          <Tooltip id="tooltip-nombreentidad" place="top" effect="solid"> Por favor Diligencie el nombre de la entidad. </Tooltip>                
+
+
+
                           <label>Cargo o Rol del PEP Relacionado <span data-tooltip-id="tooltip-accionista.cargoPEP" className="tooltip-icon" > ℹ️ </span></label>
                           <input
                             type="text"
@@ -1719,7 +1670,7 @@ const App = () => {
                           </select>
                           <Tooltip id="tooltip-accionista.fideicomitentepat" place="top" effect="solid"> Por favor Diligencie el nombre de la razon social  o nombre de la empresa. </Tooltip>
 
-                            {formData.fideicomitentepat === "Si" && (
+                            {accionista.fideicomitentepat === "Si" && (
                               <>
                                 <label>Entidad Fiduciaria<span data-tooltip-id="tooltip-accionista.EntidadFiduciaria" className="tooltip-icon" > ℹ️ </span></label>
                                 <input
@@ -1803,9 +1754,6 @@ const App = () => {
                       razonSocial: "",
                       tipoIdentificacionpj: "",
                       numeroIdentificacionpj: "",
-                      nombreCompletorl: "",
-                      tipoIdentificacionrlpj: "",
-                      numeroDocumentorl: "",
                       paisResidenciapj: "",
                       departamentoResidenciapj: "",
                       participacionpj: "",
@@ -1880,58 +1828,6 @@ const App = () => {
                       required
                     />
                     <Tooltip id="tooltip-accionista.numeroIdentificacionpj" place="top" effect="solid"> Por favor diligencie el numero de identificacion de la empresa. </Tooltip>
-
-                    <label>Nombre Completo Representante Legal *<span data-tooltip-id="tooltip-accionista.nombreCompletorl" className="tooltip-icon" > ℹ️ </span></label>
-                    <input
-                      type="text"
-                      value={accionista.nombreCompletorl}
-                      onChange={(e) => {
-                        const updatedAccionistas = accionistasPJ.map((acc, i) =>
-                            i === index ? { ...acc, nombreCompletorl: e.target.value } : acc
-                        );
-                        setAccionistasPJ(updatedAccionistas);
-                    }}
-                      required
-                    />     
-                    <Tooltip id="tooltip-accionista.nombreCompletorl" place="top" effect="solid"> Por favor diligencie el nombre del Representante Legal. </Tooltip>
-
-                    <label>Tipo de Documento Representante Legal *<span data-tooltip-id="tooltip-accionista.tipoDocumentoRepresentanteLegalpj" className="tooltip-icon" > ℹ️ </span> </label>
-                    <select
-                      value={accionista.tipoDocumentoRepresentanteLegalpj}
-                      onChange={(e) => {
-                        const updatedAccionistas = accionistasPJ.map((acc, i) =>
-                            i === index ? { ...acc, tipoDocumentoRepresentanteLegalpj: e.target.value } : acc
-                        );
-                        setAccionistasPJ(updatedAccionistas);
-                    }}
-                      required
-                    >
-                      <option value="">Seleccione</option>
-                      <option value="CC">Cédula de Ciudadanía</option>
-                      <option value="Pasaporte">Pasaporte</option>
-                      <option value="CE">Cédula de Extranjería</option>
-                      <option value="DNI">Documento Nacional de Identidad</option>
-
-                    </select>   
-                    <Tooltip id="tooltip-accionista.tipoDocumentoRepresentanteLegalpj" place="top" effect="solid"> Por favor seleccione el tipo de documento de identidad del Representante Legal. </Tooltip>
-
-
-                    <label> Número de Documento Representante Legal* <span data-tooltip-id="tooltip-accionista.numeroDocumentorl" className="tooltip-icon" > ℹ️ </span></label>
-                    <input
-                      type="text"
-                      name="numeroDocumentorl"
-                      value={accionista.numeroDocumentorl}
-                      onChange={(e) => {
-                        const updatedAccionistas = [...accionistasPJ];
-                        updatedAccionistas[index].numeroDocumentorl = validarNumeroDocumento(accionista.tipoIdentificacionrl, e.target.value);
-                        setAccionistasPJ(updatedAccionistas);
-                      }}
-                      maxLength="15"
-                      required
-                    /> 
-                    <Tooltip id="tooltip-accionista.numeroDocumentorl" place="top" effect="solid"> Por favor relacione  el numero de documento de Representante Legal. </Tooltip>
-
-
 
                     <label>País de Residencia *<span data-tooltip-id="tooltip-accionista.paisResidenciapj" className="tooltip-icon" > ℹ️ </span> </label>
                     <select
@@ -2066,15 +1962,33 @@ const App = () => {
                             type="text"
                             value={accionista.numeroDocumentopep}
                             onChange={(e) => {
-                              const updatedAccionistas = [...accionistasPJ]; // Si es de Persona Jurídica
-                              updatedAccionistas[index].numeroDocumentopepPJ = validarNumeroDocumento(accionista.tipoDocumentopepPJ, e.target.value);
+                              const updatedAccionistas = [...accionistasPJ];
+                              updatedAccionistas[index].numeroDocumentopep = validarNumeroDocumento(accionista.tipoIdentificacionpj, e.target.value);
                               setAccionistasPJ(updatedAccionistas);
                             }}
+                            required
                             maxLength="15"
                             required
                           />
                           <Tooltip id="tooltip-accionista.numeroDocumentopep" place="top" effect="solid"> Por favor Diligencie el numero de documento de identidad del PEP. </Tooltip>                
                           
+                          <label>Nombre Entidad <span data-tooltip-id="tooltip-nombreentidad" className="tooltip-icon" > ℹ️ </span></label>
+                          <input
+                            type="text"
+                            name="nombreentidad"
+                            value={accionista.nombreentidadpn}
+                            onChange={(e) => {
+                              const updatedAccionistas = accionistasPJ.map((acc, i) =>
+                                  i === index ? { ...acc, nombreentidadpn: e.target.value } : acc
+                              );
+                              setAccionistasPJ(updatedAccionistas);
+                          }}
+                            maxLength="100"
+                          />
+                          <Tooltip id="tooltip-nombreentidad" place="top" effect="solid"> Por favor Diligencie el nombre de la entidad. </Tooltip>                
+
+
+
                           <label>Cargo o Rol del PEP Relacionado <span data-tooltip-id="tooltip-accionista.cargoPEP" className="tooltip-icon" > ℹ️ </span></label>
                           <input
                             type="text"
@@ -2135,7 +2049,7 @@ const App = () => {
                           </select>
                           <Tooltip id="tooltip-accionista.fideicomitentepat" place="top" effect="solid"> Por favor Diligencie el nombre de la razon social  o nombre de la empresa. </Tooltip>
 
-                            {formData.fideicomitentepat === "Si" && (
+                            {accionista.fideicomitentepat === "Si" && (
                               <>
                                 <label>Entidad Fiduciaria<span data-tooltip-id="tooltip-accionista.EntidadFiduciaria" className="tooltip-icon" > ℹ️ </span></label>
                                 <input
