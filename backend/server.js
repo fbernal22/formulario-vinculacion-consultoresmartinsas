@@ -4,13 +4,21 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
+const fs = require("fs");
+const xlsx = require("xlsx");
+
+const PORT = process.env.PORT || 5000; // Usa el puerto definido en .env o 5000 por defecto
 
 // Crear la aplicación de Express
 const app = express();  
 
 // Configurar middlewares
 app.use(bodyParser.json()); // Para manejar JSON en el cuerpo de la solicitud
-app.use(cors()); // Permitir peticiones desde el frontend
+app.use(cors({
+  origin: "https://build-peh6axs6n-fbernal22s-projects.vercel.app",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type"]
+}));
 
 // Ruta para manejar el envío del formulario
 app.post("/api/submit", (req, res) => {
@@ -56,26 +64,10 @@ app.post("/enviar-correo", async (req, res) => {
   }
 });
 
-
-const mysql = require("mysql2"); // Importar MySQL
-
-// Configurar conexión a la base de datos
-const db = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT
-});
-
-// Conectar a MySQL
-db.connect(err => {
-    if (err) {
-        console.error("❌ Error conectando a MySQL:", err);
-        return;
-    }
-    console.log("✅ Conectado a MySQL");
-});
+  // Ruta de prueba para saber si el servidor está corriendo
+  app.get("/", (req, res) => {
+    res.send("✅ API de Vinculación funcionando 🚀");
+  });
 
 // Obtener todas las vinculaciones
 app.get("/vinculaciones", (req, res) => {
@@ -142,12 +134,57 @@ app.delete("/vinculacion/:id", (req, res) => {
   });
 });
 
+app.use(express.json());
+app.use(cors());
+
+app.post("/guardar-excel", (req, res) => {
+  const datosFormulario = req.body;
+  const filePath = __dirname + "/datos_vinculacion.xlsx";
+  let workbook, worksheet;
+
+  console.log("📥 Recibiendo datos para guardar en Excel:", datosFormulario);
+
+  try {
+      if (fs.existsSync(filePath)) {
+          workbook = xlsx.readFile(filePath);
+          worksheet = workbook.Sheets["Vinculaciones"] || xlsx.utils.json_to_sheet([]);
+          const datosExistentes = xlsx.utils.sheet_to_json(worksheet);
+          datosExistentes.push(datosFormulario);
+          worksheet = xlsx.utils.json_to_sheet(datosExistentes);
+      } else {
+          workbook = xlsx.utils.book_new();
+          worksheet = xlsx.utils.json_to_sheet([datosFormulario]);
+      }
+
+      xlsx.utils.book_append_sheet(workbook, worksheet, "Vinculaciones");
+      xlsx.writeFile(workbook, filePath);
+
+      console.log("✅ Datos guardados en Excel correctamente.");
+      res.json({ mensaje: "✅ Datos guardados en Excel correctamente" });
+  } catch (error) {
+      console.error("❌ Error guardando en Excel:", error);
+      res.status(500).json({ mensaje: "Error guardando en Excel" });
+  }
+});
+
+  
+app.get("/descargar-excel", (req, res) => {
+  const filePath = __dirname + "/datos_vinculacion.xlsx"; // Ruta absoluta
+
+  if (fs.existsSync(filePath)) {
+      console.log("📂 Archivo encontrado, iniciando descarga...");
+      res.download(filePath);
+  } else {
+      console.log("❌ Archivo no encontrado.");
+      res.status(404).json({ mensaje: "❌ No se encontró el archivo Excel" });
+  }
+});
+
 app.get("/", (req, res) => {
   res.send("✅ API de Vinculación funcionando 🚀");
 });
 
-// Iniciar el servidor en el puerto correcto
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor ejecutándose en el puerto ${PORT}`);
 });

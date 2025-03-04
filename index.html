@@ -1,12 +1,39 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formulario de Vinculación</title>
+  <meta charset="UTF-8">
+  <title>Formulario de Vinculación</title>
+  <!-- Incluye jQuery y JSONForm -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsonform/2.0.4/jsonform.min.js"></script>
 </head>
 <body>
-    <h1>Bienvenido al Formulario de Vinculación</h1>
-    <p>Este es un formulario de prueba.</p>
+  <!-- Aquí se renderizará el formulario -->
+  <div id="form-container"></div>
+  
+  <script>
+    // Define tu JSON con la estructura del formulario.
+    // Modifica este objeto con los campos que necesites.
+    var schema = {
+      "type": "object",
+      "properties": {
+        "nombre": { "type": "string", "title": "Nombre" },
+        "email": { "type": "string", "title": "Correo Electrónico" }
+      }
+    };
+
+    // Usa JSONForm para generar el formulario en el contenedor
+    $('#form-container').jsonForm({
+      schema: schema,
+      onSubmit: function (errors, values) {
+        if (errors) {
+          alert("Se han encontrado errores en el formulario.");
+        } else {
+          alert("Formulario enviado: " + JSON.stringify(values));
+          // Aquí puedes enviar los datos a un servidor o procesarlos según necesites.
+        }
+      }
+    });
+  </script>
 </body>
 </html>

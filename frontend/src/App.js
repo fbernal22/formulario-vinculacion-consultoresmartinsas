@@ -3,9 +3,11 @@ import "./App.css";
 import { Tooltip } from "react-tooltip";
 import logo from "./assets/logo.png";
 import axios from "axios";
-import Swal from "sweetalert2";
+import imagenExito from "./assets/Proceso-finalizados.png";
 
-const API_URL = "https://formulario-vinculacion-consultoresmartinsas.vercel.app/";
+
+
+const API_URL = "https://backend-vinculacion.onrender.com";
 
 // Datos de países, departamentos y ciudades
 const data = {
@@ -285,7 +287,7 @@ const App = () => {
     numeronit: "",
     nombreCompletorl: "",
     tipoDocumentorl: "",
-    numeroDocumentorl: "",
+    numeroDocumentoRepresentante: "",
     descripcionrelacioncomercial: "",
     tipodeidentificaciondesociedad: "",
     fechaconstitucion: "",
@@ -343,6 +345,9 @@ const App = () => {
     pais: "",
     numeroNIT: "",
     tipoDocumentopep: "",
+    paisResidenciaaccionista: "",
+    departamentoResidenciaaccionista: "",
+    ciudadResidenciaaccionista: "",
     numeroDocumentopep: "",
     fechadevinculacioncargo: "",
     fechadedesvinculacioncargo: "",
@@ -367,6 +372,7 @@ const App = () => {
     declaracionpep: false,
   });
 
+
   const [errores, setErrores] = useState({});
 
   const [departamentos, setDepartamentos] = useState([]);
@@ -376,8 +382,11 @@ const App = () => {
   const [accionistasPN, setAccionistasPN] = useState([]);
   const [numAccionistasPJ, setNumAccionistasPJ] = useState(0);
   const [accionistasPJ, setAccionistasPJ] = useState([]);
-
+  
   const [transactionId, setTransactionId] = useState("");
+
+  const imagenExito = require("./assets/Proceso-finalizados.png");
+
   useEffect(() => {
     setTransactionId(generateTransactionId());
   }, []);
@@ -387,12 +396,11 @@ const App = () => {
       alert("Número de documento no permitido.");
   }
     return true;
-  };
-  // Si el número es válido, continuar con el proceso normal
+      // Si el número es válido, continuar con el proceso normal
   alert("✅ Formulario enviado correctamente.");
   console.log("✅ Número de documento válido, continuando con el envío...");
 
-
+  };
 
   const opcionesTipoContraparte = {
     Accionista: ["Accionista"],
@@ -406,29 +414,6 @@ const App = () => {
       "Proveedor de Compras Internas - Internacional",
     ],
   };
-
-  const enviarFormulario = async (e) => {
-    e.preventDefault(); // Evita el envío automático del formulario
-
-        if (!formData || !formData.numeroDocumento) {
-
-            alert("Por favor, ingrese su número de documento.");
-            return;
-        }
-
-        try {
-            const response = await axios.post(API_URL, formData);
-            if (response.status === 201) {
-                alert("✅ Proceso finalizado exitosamente.");
-            } else {
-                alert("⚠️ Hubo un problema al guardar los datos.");
-            }
-        } catch (error) {
-            console.error("Error al enviar los datos:", error);
-            alert("❌ Ocurrió un error al enviar el formulario.");
-        }
-    };
-
 
   const [vinculaciones, setVinculaciones] = useState([]);
     useEffect(() => {
@@ -454,54 +439,158 @@ const App = () => {
   ];
 
   const handleChange = (e) => {
-    
     const { name, value, type, checked } = e.target;
 
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: type === "checkbox" ? checked : value,
-      ...(name === "Contraparte" ? { tipodecontraparte: "" } : {}), // Reset tipo de contraparte si cambia Contraparte
-    }));
+    setFormData((prevData) => {
+      let newValue = type === "checkbox" ? checked : value;
 
-    
-    
-    if (name === "paisNacimiento") {
-      const departamentosData = data[value]?.departamentos || {};
-      setDepartamentos(Object.keys(departamentosData));
-      setCiudades([]);
-    }
+        // Si cambia el tipo de documento del representante, limpiar el número de documento
+        if (name === "tipoDocumentorl") {
+          return {
+              ...prevData,
+              [name]: value,
+              numeroDocumentoRepresentante: "" // Limpiar el campo al cambiar el tipo
+          };
+      }
 
-    if (name === "departamentoNacimiento") {
-      const ciudadesData =
-        data[formData.paisNacimiento]?.departamentos[value] || [];
-      setCiudades(ciudadesData);
-    }
+      // Validación para "Número de Documento Representante Legal"
+      if (name === "numeroDocumentoRepresentante") {
+          const tipoDocumentorl = prevData.tipoDocumentorl || value; // Asegurar el estado actualizado
 
-    if (name === "paisExpedicion") {
-      const departamentosData = data[value]?.departamentos || {};
-      setDepartamentos(Object.keys(departamentosData));
-      setCiudades([]);
-    }
+          if (tipoDocumentorl === "Pasaporte") {
+              return {
+                  ...prevData,
+                  [name]: value // Permitir alfanumérico (letras y números)
+              };
+          } else {
+              if (/^\d*$/.test(value)) { // Permitir solo números
+                  return {
+                      ...prevData,
+                      [name]: value
+                  };
+              } else {
+                  return prevData; // No cambiar el estado si el usuario escribe letras
+              }
+          }
+      }
 
-    if (name === "departamentoExpedicion") {
-      const ciudadesData =
-        data[formData.paisExpedicion]?.departamentos[value] || [];
-      setCiudades(ciudadesData);
-    }
+        // Si cambia la "Contraparte", resetear el "tipo de contraparte"
+        if (name === "Contraparte") {
+            return {
+                ...prevData,
+                [name]: value,
+                tipodecontraparte: "" 
+            };
+        }
 
-    if (name === "paisResidencia") {
-      const departamentosData = data[value]?.departamentos || {};
-      setDepartamentos(Object.keys(departamentosData));
-      setCiudades([]);
-    }
+        // Manejo de datos de país, departamento y ciudad
+        if (name === "paisNacimiento") {
+            const departamentosData = data[value]?.departamentos || {};
+            setDepartamentos(Object.keys(departamentosData));
+            setCiudades([]);
+        }
 
-    if (name === "departamentoResidencia") {
-      const ciudadesData =
-        data[formData.paisResidencia]?.departamentos[value] || [];
-      setCiudades(ciudadesData);
-    }
-  };
+        if (name === "departamentoNacimiento") {
+            const ciudadesData = data[prevData.paisNacimiento]?.departamentos[value] || [];
+            setCiudades(ciudadesData);
+        }
 
+        if (name === "paisExpedicion") {
+            const departamentosData = data[value]?.departamentos || {};
+            setDepartamentos(Object.keys(departamentosData));
+            setCiudades([]);
+        }
+
+        if (name === "departamentoExpedicion") {
+            const ciudadesData = data[prevData.paisExpedicion]?.departamentos[value] || [];
+            setCiudades(ciudadesData);
+        }
+
+        if (name === "paisResidencia") {
+            const departamentosData = data[value]?.departamentos || {};
+            setDepartamentos(Object.keys(departamentosData));
+            setCiudades([]);
+        }
+
+        if (name === "departamentoResidencia") {
+            const ciudadesData = data[prevData.paisResidencia]?.departamentos[value] || [];
+            setCiudades(ciudadesData);
+        }
+
+        if (name === "paisResidenciaaccionista") {
+          const departamentosData = data[value]?.departamentos || {};
+          setDepartamentos(Object.keys(departamentosData));
+          setCiudades([]);
+        }
+
+        if (name === "departamentoResidenciaaccionista") {
+            const ciudadesData = data[prevData.paisResidenciaaccionista]?.departamentos[value] || [];
+            setCiudades(ciudadesData);
+        }
+
+        // Manejo de "Cotiza en la Bolsa"
+        if (name === "participacion") {
+          return {
+              ...prevData,
+              [name]: value
+          };
+        }
+
+      // Validación del porcentaje accionario (participación)
+        if (name === "participacion") {
+            let nuevoPorcentaje = parseFloat(value) || 0;
+            let totalPorcentaje = nuevoPorcentaje;
+
+            // Sumar el resto de los accionistas
+            if (Array.isArray(prevData.accionistasPN)) {
+                totalPorcentaje += prevData.accionistasPN.reduce(
+                    (acc, accionista) => acc + (parseFloat(accionista.participacion) || 0),
+                    0
+                );
+            }
+            if (Array.isArray(prevData.accionistasPJ)) {
+                totalPorcentaje += prevData.accionistasPJ.reduce(
+                    (acc, accionista) => acc + (parseFloat(accionista.participacion) || 0),
+                    0
+                );
+            }
+
+            // Si cotiza en la bolsa, solo validar que no pase del 100%
+            if (prevData.accionista.participacion === "Sí") {
+                if (totalPorcentaje > 100) {
+                    alert("El porcentaje total no puede superar el 100%.");
+                    return prevData;
+                }
+            } else {
+                // Si NO cotiza, exigir que sea exactamente 100%
+                if (totalPorcentaje > 100) {
+                    alert("El porcentaje total no puede exceder el 100%.");
+                    return prevData;
+                }
+                if (totalPorcentaje < 100) {
+                    alert("La suma total de Participación Accionaria debe ser exactamente 100%.");
+                    return prevData;
+                }
+            }
+
+            return {
+                ...prevData,
+                [name]: value
+            };
+        }
+
+        return {
+            ...prevData,
+            [name]: newValue
+        };        
+
+        // Si no entra en ningún caso especial, actualizar normalmente
+        return {
+            ...prevData,
+            [name]: newValue
+        };
+    });
+};
   const validarSeccionActual = () => {
     let erroresTemp = {};
   
@@ -687,48 +776,97 @@ const App = () => {
   
   const avanzarSeccion = () => {
       console.log("Paso actual antes de validación:", step);
+
+      // Asegurar que las listas de accionistas no sean undefined
+      const accionistasPNValidos = Array.isArray(accionistasPN) ? accionistasPN : [];
+      const accionistasPJValidos = Array.isArray(accionistasPJ) ? accionistasPJ : [];
+
       console.log("Número de Accionistas PN:", numAccionistasPN);
       console.log("Número de Accionistas PJ:", numAccionistasPJ);
 
-      if (step === 2) {
-          if (numAccionistasPN <= 0 && numAccionistasPJ <= 0) {
-              alert("Debe haber al menos un accionista (Persona Natural o Jurídica).");
-              return;
-          }
-
-          const totalParticipacionPN = accionistasPN.reduce((sum, accionista) => sum + (parseFloat(accionista.participacion) || 0), 0);
-          const totalParticipacionPJ = accionistasPJ.reduce((sum, accionista) => sum + (parseFloat(accionista.participacionpj) || 0), 0);
-          const totalParticipacion = totalParticipacionPN + totalParticipacionPJ;
-
-          console.log("Total Participación PN:", totalParticipacionPN);
-          console.log("Total Participación PJ:", totalParticipacionPJ);
-          console.log("Total Participación General:", totalParticipacion);
-
-          if (totalParticipacion !== 100) {
-              alert("La suma total de Participación Accionaria debe ser exactamente 100%.");
-              return;
-          }
+      if (step === 0) {
+          setStep(1); // Todos deben pasar primero por la Sección 1
+          return;
       }
 
       if (step === 1) {
-          if (formData.tipoPersona === "PJ") {
-              console.log("Cambiando a Sección 2 (Accionistas PJ)");
-              setStep(2);
-          } else if (formData.tipoPersona === "PN") {
-              console.log("Cambiando directamente a Sección 3 (Información Financiera)");
-              setStep(3);
+          if (formData.tipoPersona === "PN") {
+              setStep(3); // Si es PN, ir a Sección 3 (Información Financiera)
+              return;
+          } else if (formData.tipoPersona === "PJ") {
+              setStep(2); // Si es PJ, ir a Sección 2 (Composición Accionaria)
+              return;
           }
-      } else if (step === 2) {
-          console.log("Validación correcta. Cambiando a Sección 3 (Información Financiera)");
-          setStep((prevStep) => prevStep + 1);  // <--- Cambio importante
-      } else {
-          setStep((prevStep) => prevStep + 1);
       }
+
+      if (step === 2) {
+          setStep(3); // Después de Composición Accionaria, ir a Información Financiera
+          return;
+      }
+
+      if (step === 3) {
+          setStep(4); // Después de Información Financiera, ir a Declaración de Impuestos
+          return;
+      }
+
+      if (step === 4) {
+          if (formData.tipoPersona === "PN") {
+              console.log("Persona Natural, avanzando a Sección 5");
+              setStep(5); // Si es PN, ir a Sección 5 (Información de PEP)
+              return;
+          } else {
+              setStep(6); // Si es PJ, saltar Sección 5 e ir a Sección 6
+              return;
+          }
+      }
+
+      if (step === 5) {
+          setStep(6); // Después de Información de PEP, ir a Sección 6
+          return;
+      }
+
+      setStep((prevStep) => prevStep + 1);
 
       setTimeout(() => {
           console.log("Paso actual después de intentar avanzar:", step);
       }, 500);
   };
+
+  const [procesoExitoso, setProcesoExitoso] = useState(false);
+
+  const ProcesoFinalizado = () => {
+    return (
+      <div className="contenedor-exito">
+        <h1 className="titulo-exito">¡Proceso de Vinculación Exitoso!</h1>
+        <img src={imagenExito} alt="Proceso Finalizado" className="imagen-exito" />
+        <p className="texto-exito">Gracias por completar el proceso.</p>
+      </div>
+    );
+  };
+
+  const manejarCambio = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const manejarEnvio = async (e) => {
+    e.preventDefault();  // Evita que el formulario recargue la página
+
+    try {
+      // Enviar los datos del formulario al backend
+      const respuesta = await axios.post(
+          "https://backend-vinculacion.onrender.com/guardar-excel",
+          formData
+      );
+
+      alert(respuesta.data.mensaje); // Mensaje de éxito
+      console.log("📂 Datos guardados en Excel correctamente");
+  } catch (error) {
+      console.error("❌ Error al guardar en Excel:", error);
+      alert("❌ Error al enviar los datos");
+  }
+};
+
+
 
   const validarNumeroDocumento = (tipoDocumento, valor) => {
     if (tipoDocumento === "Pasaporte") {
@@ -738,7 +876,7 @@ const App = () => {
     }
   };
 
-
+  const [formularioEnviado, setFormularioEnviado] = useState(false);
 
   const handleNext = () => {
     setStep((prevStep) => prevStep + 1);
@@ -749,37 +887,47 @@ const App = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+      e.preventDefault();
 
+      if (!formData.numeroDocumento) {
+          alert("Por favor, ingrese su número de documento.");
+          return;
+      }
 
-    if (!formData.numeroDocumento) {
-        alert("Por favor, ingrese su número de documento.");
-        return;
-    }
+      const numeroDocumento = formData?.numeroDocumento || "Desconocido";
 
-    const numeroDocumento = formData?.numeroDocumento || "Desconocido";
+      try {
+          await enviarCorreo(formData.correoElectronico, "Proceso Finalizado", "Tu proceso de vinculación ha sido completado con éxito.");
+          await enviarCorreo("fabernal9722@gmail.com", "Nuevo Registro Completado", 
+              `El usuario con número de documento ${numeroDocumento} ha finalizado el proceso.`);
+          console.log("📧 Correos de confirmación enviados correctamente");
+      } catch (error) {
+          console.error("❌ Error enviando correos de confirmación:", error);
+      }
 
-    try {
-        await enviarCorreo(formData.correoElectronico, "Proceso Finalizado", "Tu proceso de vinculación ha sido completado con éxito.");
-        await enviarCorreo("fabernal9722@gmail.com", "Nuevo Registro Completado", 
-            `El usuario con número de documento ${numeroDocumento} ha finalizado el proceso.`);
-        console.log("📧 Correos de confirmación enviados correctamente");
-    } catch (error) {
-        console.error("❌ Error enviando correos de confirmación:", error);
-    }
-    
+      try {
+          await enviarCorreo("fabernal9722@gmail.com", "Intento bloqueado", 
+              `Se ha intentado registrar un número de documento bloqueado: ${numeroDocumento}.`);
+          console.log("📧 Correo de alerta enviado correctamente");
+      } catch (error) {
+          console.error("❌ Error enviando correo de alerta:", error);
+      }
 
-    try {
-        await enviarCorreo("fabernal9722@gmail.com", "Intento bloqueado", 
-            `Se ha intentado registrar un número de documento bloqueado: ${numeroDocumento}.`);
-        console.log("📧 Correo de alerta enviado correctamente");
-    } catch (error) {
-        console.error("❌ Error enviando correo de alerta:", error);
-    }
+      try {
+          // Guardar en Excel
+          const respuestaExcel = await axios.post("https://backend-vinculacion.onrender.com/guardar-excel", formData);
+          alert(respuestaExcel.data.mensaje);
+          
+          console.log("📂 Datos guardados en Excel correctamente");
 
-    console.log("🚀 handleSubmit se ejecutó correctamente!"); // Debugging
+      } catch (error) {
+          console.error("❌ Error al guardar en Excel:", error);
+      }
 
-    alert("Formulario enviado correctamente.");
+      console.log("🚀 handleSubmit se ejecutó correctamente!");
+
+      // ✅ En lugar de un alert, activamos la pantalla de éxito
+      setProcesoExitoso(true);
   };
 
 
@@ -804,12 +952,33 @@ const App = () => {
   const totalSteps = 7;
   const progress = (step / totalSteps) * 100; // 🔹 Cálculo dinámico del progreso
 
-  
+  const enviarFormulario = (e) => {
+      e.preventDefault(); // Evita la recarga de la página
+
+      console.log("Enviando formulario...");
+
+      // Simulación de proceso de envío con un timeout
+      setTimeout(() => {
+          alert("El formulario ha sido enviado con éxito.");
+      }, 1000);
+  };
+
+  // Modificación en el return para mostrar la pantalla de éxito
+if (procesoExitoso) {
+  return (
+      <div className="success-container">
+          <h2>¡Proceso de Vinculación Exitoso!</h2>
+          <img src={imagenExito} alt="Éxito" />
+          <p>Gracias por completar el proceso.</p>
+      </div>
+  );
+}
 
   return (
+     
     
     <div className="form-container">
-
+      <form onSubmit={manejarEnvio}>
       <div className="top-bar">
       <img src={logo} alt="Logo Consultoría" className="form-logo" />
         <h1></h1>
@@ -829,7 +998,7 @@ const App = () => {
       <form onSubmit={handleSubmit}>
 
         {/* Sección 1: Información Inicial */}
-        {step === 0 && (
+        {step === 0 && (  
         <>
           <label>
             Fecha de Diligenciamiento*<span data-tooltip-id="tooltip-fecha" className="tooltip-icon"> ℹ️ </span>
@@ -1263,18 +1432,145 @@ const App = () => {
              
                 <label> Número de Documento Representante Legal* <span data-tooltip-id="tooltip-numeroDocumentorl" className="tooltip-icon" > ℹ️ </span></label>
                 <input
-                  type="text"
-                  name="numeroDocumentorl"
-                  value={formData.numeroDocumentorl}
-                  onChange={(e) => {
-                    const nuevoValor = validarNumeroDocumento(formData.tipoDocumento, e.target.value);
-                    setFormData({ ...formData, numeroDocumentorl: nuevoValor });
-                  }}
-                  maxLength="15"
-                  required
-                /> 
+                    type="text"
+                    name="numeroDocumentoRepresentante"
+                    value={formData.numeroDocumentoRepresentante}
+                    onChange={handleChange}
+                    required
+                    pattern={formData.tipoDocumentorl === "Pasaporte" ? "[A-Za-z0-9]+" : "\\d+"} 
+                    title={formData.tipoDocumentorl === "Pasaporte" ? "Solo se permiten letras y números" : "Solo se permiten números"}
+                />
+
                 {errores.numeroDocumentorl && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.numeroDocumentorl}</span>)}            
                 <Tooltip id="tooltip-numeroDocumentorl" place="top" effect="solid"> Por favor relacione  el numero de documento de Representante Legal. </Tooltip>
+
+
+                <label>¿Es Usted o Algún Familiar una Persona Expuesta Políticamente (PEP)? * <span data-tooltip-id="tooltip-esPEP" className="tooltip-icon" > ℹ️ </span></label>
+                  <select
+                    name="esPEP"
+                    value={formData.esPEP}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">Seleccione</option>
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                  </select>
+                  {errores.esPEP && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.esPEP}</span>)}            
+                  <Tooltip id="tooltip-esPEP" place="top" effect="solid"> Por favor Diligencie el nombre de la razon social  o nombre de la empresa. </Tooltip>
+
+
+
+                  {formData.esPEP === "Si" && (
+                    <>
+
+                  
+                      <label>Nombre Entidad <span data-tooltip-id="tooltip-nombreentidad" className="tooltip-icon" > ℹ️ </span></label>
+                      <input
+                        type="text"
+                        name="nombreentidad"
+                        value={formData.nombreentidad}
+                        onChange={handleChange}
+                        maxLength="100"
+                      />
+                      <Tooltip id="tooltip-nombreentidad" place="top" effect="solid"> Por favor Diligencie el nombre de la entidad. </Tooltip>                
+
+
+                      
+                      <label>Cargo o Rol del PEP Relacionado <span data-tooltip-id="tooltip-cargoPEP" className="tooltip-icon" > ℹ️ </span></label>
+                      <input
+                        type="text"
+                        name="cargoPEP"
+                        value={formData.cargoPEP}
+                        onChange={handleChange}
+                        maxLength="100"
+                      />
+                      <Tooltip id="tooltip-cargoPEP" place="top" effect="solid"> Por favor Diligencie el cargo o el rol del PEP. </Tooltip>
+
+
+                      <label>Fecha de Vinculación al cargo*<span data-tooltip-id="tooltip-fechadevinculacionalcargo" className="tooltip-icon"> ℹ️ </span></label>
+                      <input
+                        type="date"
+                        name="fechadevinculacionalcargo"
+                        value={formData.fechadevinculacionalcargo}
+                        onChange={handleChange}
+                        required
+                      />
+                      {errores.fechadevinculacionalcargo && (<span style={{ color: "red", fontSize: "12px", marginBottom: "20px", display: "block" }}>{errores.fechadediligenciamiento}</span>)}
+                      <Tooltip id="tooltip-fechadevinculacionalcargo" place="top" effect="solid">Se debe relacionar la fecha de diligenciamiento de este formulario</Tooltip>
+
+                      <label>Fecha de Desvinculación al cargo*<span data-tooltip-id="tooltip-fechadedesvinculacioncargo" className="tooltip-icon"> ℹ️ </span></label>
+                      <input
+                        type="date"
+                        name="fechadedesvinculacioncargo"
+                        value={formData.fechadedesvinculacioncargo}
+                        onChange={handleChange}
+                        required
+                      />
+                      {errores.fechadedesvinculacioncargo && (<span style={{ color: "red", fontSize: "12px", marginBottom: "20px", display: "block" }}>{errores.fechadediligenciamiento}</span>)}
+                      <Tooltip id="tooltip-fechadedesvinculacioncargo" place="top" effect="solid">Se debe relacionar la fecha de diligenciamiento de este formulario</Tooltip>
+
+                      <label>¿Es Fideicomitente de patrimonios autonomos o fideicomisos que administren recursos públicos o alguno de sus relacionados de la persona juridica? * <span data-tooltip-id="tooltip-fideicomitentepat" className="tooltip-icon" > ℹ️ </span></label>
+                      <select
+                        name="fideicomitentepat"
+                        value={formData.fideicomitentepat}
+                        onChange={handleChange}
+                        required
+                      >
+                        <option value="">Seleccione</option>
+                        <option value="Si">Sí</option>
+                        <option value="No">No</option>
+                      </select>
+                      {errores.fideicomitentepat && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.esPEP}</span>)}            
+                      <Tooltip id="tooltip-fideicomitentepat" place="top" effect="solid"> Por favor Diligencie el nombre de la razon social  o nombre de la empresa. </Tooltip>
+
+                        {formData.fideicomitentepat === "Si" && (
+                          <>
+                            <label>Entidad Fiduciaria<span data-tooltip-id="tooltip-EntidadFiduciaria" className="tooltip-icon" > ℹ️ </span></label>
+                            <input
+                              type="text"
+                              name="EntidadFiduciaria"
+                              value={formData.EntidadFiduciaria}
+                              onChange={handleChange}
+                              maxLength="100"
+                            />
+                            <Tooltip id="tooltip-EntidadFiduciaria" place="top" effect="solid"> Por favor Diligencie el nombre de la entidad. </Tooltip>                
+
+                            <label>Entidad pública de la cual administra recursos públicos <span data-tooltip-id="tooltip-entidadpublica" className="tooltip-icon" > ℹ️ </span></label>
+                            <input
+                              type="text"
+                              name="entidadpublica"
+                              value={formData.entidadpublica}
+                              onChange={handleChange}
+                              maxLength="100"
+                            />
+                            <Tooltip id="tooltip-entidadpublica" place="top" effect="solid"> Por favor Diligencie el nombre de la entidad. </Tooltip>                
+
+                            <label>Valor Administrado * <span data-tooltip-id="tooltip-valoradministrado" className="tooltip-icon" > ℹ️ </span></label>
+                            <input
+                              type="text"
+                              name="valoradministrado"
+                              value={formData.valoradministrado}
+                              onChange={(e) => {
+                                const rawValue = e.target.value.replace(/\D/g, ""); // Elimina todo excepto números
+                                const formattedValue = `$ ${parseInt(rawValue || 0).toLocaleString("es-CO")}`;
+                                setFormData({ ...formData, valoradministrado: formattedValue });
+                              }}
+                              maxLength="20"
+                              placeholder="$ 0"
+                              required
+                            />
+                            {errores.valoradministrado && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.ingresosMensuales}</span>)}            
+                            <Tooltip id="tooltip-valoradministrado" place="top" effect="solid"> Por favor Diligencie sus ingresos mensuales. </Tooltip>
+
+
+
+                          </>
+                        )}
+
+
+                    </>
+                  )}
 
 
                
@@ -1441,8 +1737,9 @@ const App = () => {
                       nombre: "",
                       tipoIdentificacion: "",
                       numeroIdentificacion: "",
-                      paisResidencia: "",
-                      departamentoResidencia: "",
+                      paisResidenciaaccionista: "",
+                      departamentoResidenciaaccionista: "",
+                      ciudadResidenciaaccionista: "",
                       participacion: "",
                       pep: "",
                       nombreentidadpn: "",
@@ -1457,6 +1754,7 @@ const App = () => {
                     })) : []);
                   }}
                   required
+                  max="100"
                 />
                 <Tooltip id="tooltip-numAccionistas" place="top" effect="solid"> Por favor seleccione cuantos accionistas tiene su empresa. </Tooltip>
 
@@ -1515,12 +1813,13 @@ const App = () => {
 
 
 
-                    <label>País de Residencia *<span data-tooltip-id="tooltip-accionista.paisResidencia" className="tooltip-icon" > ℹ️ </span> </label>
+                    <label>País de Residencia *<span data-tooltip-id="tooltip-accionista.
+                    " className="tooltip-icon" > ℹ️ </span> </label>
                     <select
-                      value={accionista.paisResidencia}
+                      value={accionista.paisResidenciaaccionista}
                       onChange={(e) => {
                         const updatedAccionistas = [...accionistasPN];
-                        updatedAccionistas[index].paisResidencia = e.target.value;
+                        updatedAccionistas[index].paisResidenciaaccionista = e.target.value;
                         setAccionistasPN(updatedAccionistas);
                       }}
                       required
@@ -1532,18 +1831,19 @@ const App = () => {
                         </option>
                       ))}
                     </select>
-                    <Tooltip id="tooltip-accionista.paisResidencia" place="top" effect="solid"> Diligenciar el pais de donde se encuentra la oficina. </Tooltip>
+                    <Tooltip id="tooltip-accionista.paisResidenciaaccionista" place="top" effect="solid"> Diligenciar el pais de donde se encuentra la oficina. </Tooltip>
 
 
 
-                    {accionista.paisResidencia === "Colombia" && (
-                      <>                    
-                        <label>Departamento de Residencia *<span data-tooltip-id="tooltip-accionista.departamentoResidencia" className="tooltip-icon" > ℹ️ </span> </label>
+                    {formData.paisResidenciaaccionista === "Colombia" && (
+                      <>            
+                        <label>Departamento de Residencia *<span data-tooltip-id="tooltip-departamentoResidenciaaccionista" className="tooltip-icon" > ℹ️ </span></label>
                         <select
-                          value={accionista.departamentoResidencia}
+                          name="departamentoResidenciaaccionista"
+                          value={accionista.departamentoResidenciaaccionista}
                           onChange={(e) => {
                             const updatedAccionistas = [...accionistasPN];
-                            updatedAccionistas[index].departamentoResidencia = e.target.value;
+                            updatedAccionistas[index].departamentoResidenciaaccionista = e.target.value;
                             setAccionistasPN(updatedAccionistas);
                           }}
                           required
@@ -1555,13 +1855,27 @@ const App = () => {
                             </option>
                           ))}
                         </select>
+                        {errores.departamentoResidenciaaccionista && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.departamentoResidencia}</span>)}  
+                        <Tooltip id="tooltip-departamentoResidenciaaccionista" place="top" effect="solid"> Diligenciar el departamento de residencia. </Tooltip>
+                          
                       </>
+                      
                     )}
-                    <Tooltip id="tooltip-accionista.departamentoResidencia" place="top" effect="solid"> Diligenciar el departamento de donde se encuentra la oficina. </Tooltip>
-
-                    
+                  
+                    <label>Ciudad de Residencia *<span data-tooltip-id="tooltip-ciudadResidenciaaccionista" className="tooltip-icon" > ℹ️ </span></label>
+                    <input
+                      type="text"
+                      name="ciudadResidenciaaccionista"
+                      value={accionista.ciudadResidenciaaccionista}
+                      onChange={(e) => {
+                        const updatedAccionistas = [...accionistasPN];
+                        updatedAccionistas[index].ciudadResidenciaaccionista = e.target.value;
+                        setAccionistasPN(updatedAccionistas);
+                      }}
+                      required
+                    />
                  
-                    <label>Participación Accionaria (%) *<span data-tooltip-id="tooltip-accionista.participacion" className="tooltip-icon" > ℹ️ </span> </label>
+                    <label>Participación Accionaria (%) *<span data-tooltip-id="tooltip-accionista.ciudadResidenciaaccionista" className="tooltip-icon" > ℹ️ </span> </label>
                     <input
                       type="number"
                       min="0"
@@ -1575,7 +1889,7 @@ const App = () => {
                       }}
                       required
                     />
-                    <Tooltip id="tooltip-accionista.participacion" place="top" effect="solid"> Por favor diligencie el porcentaje de participacion de cada uno de los accionistas. </Tooltip>
+                    <Tooltip id="tooltip-accionista.ciudadResidenciaaccionista" place="top" effect="solid"> Por favor diligencie el porcentaje de participacion de cada uno de los accionistas. </Tooltip>
 
 
 
@@ -1727,7 +2041,7 @@ const App = () => {
                       value={accionista.bolsadevalores}
                       onChange={(e) => {
                         const updatedAccionistas = [...accionistasPN];
-                        updatedAccionistas[index].pep = e.target.value;
+                        updatedAccionistas[index].bolsadevalores = e.target.value;
                         setAccionistasPN(updatedAccionistas);
                       }}
                       required
@@ -1772,6 +2086,7 @@ const App = () => {
                     })) : []);
                   }}
                   required
+                  max="100"
                 />
                 <Tooltip id="tooltip-numAccionistasPJ" place="top" effect="solid"> Por favor seleccione cuantos accionistas tiene su empresa. </Tooltip>
 
@@ -2960,6 +3275,8 @@ const App = () => {
               </>
             )}
 
+            <hr />             
+
             <label>¿Tiene Rendimiento Financiero? * <span data-tooltip-id="tooltip-Tienerendiminetofinanciero" className="tooltip-icon" > ℹ️ </span></label>
             <select
               name="Tienerendiminetofinanciero"
@@ -3026,8 +3343,40 @@ const App = () => {
               required
             />    
 
+              </>
+            )},
 
-            
+            <hr /> 
+
+            <label>¿Tiene Informacion Bancaria? * <span data-tooltip-id="tooltip-informacionbancaria" className="tooltip-icon" > ℹ️ </span></label>
+            <select
+              name="informacionbancaria"
+              value={formData.informacionbancaria}
+              onChange={(e) => {
+                const informacionbancaria = e.target.value;
+                
+                setFormData({
+                  ...formData,
+                  informacionbancaria,
+                  ...(informacionbancaria === "No" && {
+                    entidadfinancieradepagos: "",
+                    numerodecuenta: "",
+                    plazodepagos: "",
+                  }),
+                });
+              }}
+              required
+            >
+              <option value="">Seleccione</option>
+              <option value="Si">Sí</option>
+              <option value="No">No</option>
+            </select>
+            {errores.informacionbancaria && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.informacionbancaria}</span>)}            
+            <Tooltip id="tooltip-informacionbancaria" place="top" effect="solid"> Seleccionar si esta sujerto o no a retencion. </Tooltip>
+
+            {/* Mostrar solo si "Sujeto a retención" es "Sí" */}
+            {formData.informacionbancaria === "Si" && (
+              <>
             <label>Entidad Financiera donde se realizan los Pagos</label>
             <input
               type="text" 
@@ -3036,7 +3385,7 @@ const App = () => {
               onChange={handleChange}
               maxLength="100"
             />  
-
+ 
 
             
             <label>Numero de Cuenta</label>
@@ -3057,11 +3406,12 @@ const App = () => {
               value={formData.plazodepagos}
               onChange={handleChange}
               maxLength="100"
-            />                                    
+            />    
 
               </>
-            )}  
+            )},  
 
+           <hr />
 
             <label>¿Tiene productos financieros en el extranjero? *<span data-tooltip-id="tooltip-productosfinancierosextranjeros" className="tooltip-icon" > ℹ️ </span></label>
             <select
@@ -3217,6 +3567,7 @@ const App = () => {
 
         {/* Sección 5: Información de PEP */}
         {step === 5 && formData.tipoPersona === "PN" && (
+
           <>
 
 
@@ -3224,7 +3575,7 @@ const App = () => {
             <select
               name="esPEP"
               value={formData.esPEP}
-              onChange={handleChange}
+              onChange={(e) => {setFormData({ ...formData, esPEP: e.target.value });}}
               required
             >
               <option value="">Seleccione</option>
@@ -3251,11 +3602,10 @@ const App = () => {
                 <Tooltip id="tooltip-nombredelpep" place="top" effect="solid"> Por favor Diligencie el nombre del PEP que tiene relacion. </Tooltip>                
                
 
-
-                <label>Tipo de Documento *<span data-tooltip-id="tooltip-tipoDocumentopep" className="tooltip-icon" > ℹ️ </span></label>
+                <label>Tipo de Documento Representante Legal *<span data-tooltip-id="tooltip-tipoDocumentorl" className="tooltip-icon" > ℹ️ </span> </label>
                 <select
-                  name="tipoDocumentopep"
-                  value={formData.tipoDocumentopep}
+                  name="tipoDocumentorl"
+                  value={formData.tipoDocumentorl}
                   onChange={handleChange}
                   required
                 >
@@ -3264,27 +3614,26 @@ const App = () => {
                   <option value="Pasaporte">Pasaporte</option>
                   <option value="CE">Cédula de Extranjería</option>
                   <option value="DNI">Documento Nacional de Identidad</option>
-                  <option value="NIT">NIT</option>
-                  <option value="SE">Sociedad Extranjera</option>
 
-                </select>
-                <Tooltip id="tooltip-tipoDocumentopep" place="top" effect="solid"> Por favor seleccione el tipo de documento del PEP. </Tooltip>
-
+                </select>   
+                {errores.tipoDocumentorl && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.tipoDocumentorl}</span>)}            
+                <Tooltip id="tooltip-tipoDocumentorl" place="top" effect="solid"> Por favor seleccione el tipo de documento de identidad del Representante Legal. </Tooltip>
 
 
-                <label> Número de Documento * <span data-tooltip-id="tooltip-numeroDocumentopep" className="tooltip-icon" > ℹ️ </span></label>
+             
+                <label> Número de Documento Representante Legal* <span data-tooltip-id="tooltip-numeroDocumentorl" className="tooltip-icon" > ℹ️ </span></label>
                 <input
-                  type="text"
-                  name="numeroDocumentopep"
-                  value={formData.numeroDocumentopep}
-                  onChange={(e) => {
-                    const nuevoValor = validarNumeroDocumento(formData.tipoDocumento, e.target.value);
-                    setFormData({ ...formData, numeroDocumento: nuevoValor });
-                  }}
-                  maxLength="15"
-                  required
+                    type="text"
+                    name="numeroDocumentoRepresentante"
+                    value={formData.numeroDocumentoRepresentante}
+                    onChange={handleChange}
+                    required
+                    pattern={formData.tipoDocumentorl === "Pasaporte" ? "[A-Za-z0-9]+" : "\\d+"} 
+                    title={formData.tipoDocumentorl === "Pasaporte" ? "Solo se permiten letras y números" : "Solo se permiten números"}
                 />
-                <Tooltip id="tooltip-numeroDocumentopep" place="top" effect="solid"> Por favor Diligencie el numero de documento de identidad del PEP. </Tooltip>                
+
+                {errores.numeroDocumentorl && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.numeroDocumentorl}</span>)}            
+                <Tooltip id="tooltip-numeroDocumentorl" place="top" effect="solid"> Por favor relacione  el numero de documento de Representante Legal. </Tooltip>
 
 
              
@@ -3622,24 +3971,37 @@ const App = () => {
             {errores.declaraVeracidad && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.declaraVeracidad}</span>)}            
             <Tooltip id="tooltip-declaraVeracidad" place="top" effect="solid"> Declaro que toda la información proporcionada en este formulario es veraz, completa y precisa. Entiendo que cualquier falsedad o inexactitud puede conllevar sanciones legales y/o la suspensión de mis servicios.</Tooltip>
 
-            <div className="switch-container">
-              <label>Declaracion de Persona Expuesta Politicamente*<span data-tooltip-id="tooltip-declaracionpep" className="tooltip-icon" > ℹ️ </span></label>
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  name="declaracionpep"
-                  checked={formData.declaracionpep}
-                  onChange={(e) =>
-                    setFormData({ ...formData, declaracionpep: e.target.checked })
-                  }
-                  required
-                />
-                <span className="slider round"></span>
-              </label>
-            </div>
-            {errores.declaracionpep && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.declaraVeracidad}</span>)}            
+            {/* Condición para habilitar el campo declaracionpep */}
+            {(formData.tipoPersona === "PN" && formData.esPEP === "Si") ||
+            (formData.tipoPersona === "PJ" && (
+                formData.declaracionPEPJuridica === "Si" || 
+                (Array.isArray(formData.accionistasPJ) && formData.accionistasPJ.some(accionista => accionista.esPEP === "Si"))
+            )) ? (
+              <div className="switch-container">
+                <label>Declaración de Persona Expuesta Políticamente*<span data-tooltip-id="tooltip-declaracionpep" className="tooltip-icon"> ℹ️ </span></label>
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    name="declaracionpep"
+                    checked={formData.declaracionpep}
+                    onChange={(e) =>
+                      setFormData({ ...formData, declaracionpep: e.target.checked })
+                    }
+                    required
+                  />
+                  <span className="slider round"></span>
+                </label>
+              </div>
+            ) : (
+              <p style={{ display: "none" }}></p> // No muestra el campo si no aplica
+            )}
+            {errores.declaracionpep && (
+              <span style={{ color: "red", fontSize: "12px", marginBottom: "20px", display: "block" }}>
+                {errores.declaracionpep}
+              </span>
+            )}
             <Tooltip id="tooltip-declaracionpep" place="top" effect="solid"> Confirmo si soy o he sido una Persona Expuesta Políticamente (PEP) o si tengo vínculos con alguien que lo sea. Esta información es requerida para cumplir con las normativas de prevención de lavado de activos y financiamiento del terrorismo.</Tooltip>
-
+        
           </>
         )}
 
@@ -3656,15 +4018,16 @@ const App = () => {
               Continuar
             </button>
           ) : (
-            <button type="submit" onClick={() => console.log("🖱️ Se hizo clic en Enviar")}>
-              Enviar
-            </button>
+            <button type="submit" onClick={handleSubmit}>Enviar</button>
+
           )}
         </div>
 
       </form>
+      </form>
     </div>
   );  
+
 
 
 };
