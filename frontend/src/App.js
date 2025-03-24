@@ -11,6 +11,43 @@ const API_URL = "https://backend-vinculacion.onrender.com";
 
 // Datos de países, departamentos y ciudades
 const data = {
+  Colombia: {
+    departamentos: {
+      Amazonas: [],
+      Antioquia: [],
+      Arauca: [],
+      Atlántico: [],
+      "Bogotá, D. C.": [],
+      Bolívar: [],
+      Boyacá: [],
+      Caldas: [],
+      Caquetá: [],
+      Casanare: [],
+      Cauca: [],
+      Cesar: [],
+      Chocó: [],
+      Córdoba: [],
+      Cundinamarca: [],
+      Guainía: [],
+      Guaviare: [],
+      Huila: [],
+      "La Guajira": [],
+      Magdalena: [],
+      Meta: [],
+      Nariño: [],
+      "Norte de Santander": [],
+      Putumayo: [],
+      Quindío: [],
+      Risaralda: [],
+      "San Andrés y Providencia": [],
+      Santander: [],
+      Sucre: [],
+      Tolima: [],
+      "Valle del Cauca": [],
+      Vaupés: [],
+      Vichada: [],
+    },
+  },
   Paises: {
     Afganistan: {},
     Albania: {},
@@ -200,49 +237,8 @@ const data = {
     Zambia: {},
     Zimbabue: {},
   },
-  Colombia: {
-    departamentos: {
-      Amazonas: [],
-      Antioquia: [],
-      Arauca: [],
-      Atlántico: [],
-      "Bogotá, D. C.": [],
-      Bolívar: [],
-      Boyacá: [],
-      Caldas: [],
-      Caquetá: [],
-      Casanare: [],
-      Cauca: [],
-      Cesar: [],
-      Chocó: [],
-      Córdoba: [],
-      Cundinamarca: [],
-      Guainía: [],
-      Guaviare: [],
-      Huila: [],
-      "La Guajira": [],
-      Magdalena: [],
-      Meta: [],
-      Nariño: [],
-      "Norte de Santander": [],
-      Putumayo: [],
-      Quindío: [],
-      Risaralda: [],
-      "San Andrés y Providencia": [],
-      Santander: [],
-      Sucre: [],
-      Tolima: [],
-      "Valle del Cauca": [],
-      Vaupés: [],
-      Vichada: [],
-    },
-  },
-  Argentina: {
-    departamentos: {
-      "Buenos Aires": ["La Plata", "Mar del Plata", "Bahía Blanca"],
-      Córdoba: ["Córdoba", "Villa Carlos Paz", "Río Cuarto"],
-    },
-  },
+
+
 };
 
 
@@ -385,11 +381,20 @@ const App = () => {
   
   const [transactionId, setTransactionId] = useState("");
 
-  const imagenExito = require("./assets/Proceso-finalizados.png");
-
   useEffect(() => {
     setTransactionId(generateTransactionId());
   }, []);
+
+  useEffect(() => {
+    const today = new Date().toISOString().split("T")[0];
+    setFormData((prev) => ({
+      ...prev,
+      fechadediligenciamiento: today,
+      fechadevinculacionalcargo: today,
+      fechadedesvinculacioncargo: today,
+    }));
+  }, []);
+
 
   const verificarDocumento = () => {
     if (formData.numeroDocumento && formData.numeroDocumento.startsWith("1032")) {
@@ -438,8 +443,16 @@ const App = () => {
     "Autorizaciones y Consentimientos",
   ];
 
+  useEffect(() => {
+    // Obtener la fecha actual en formato YYYY-MM-DD
+    const today = new Date().toISOString().split("T")[0];
+    setFormData((prev) => ({ ...prev, fechadediligenciamiento: today }));
+  }, []);  
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+
+    
 
     setFormData((prevData) => {
       let newValue = type === "checkbox" ? checked : value;
@@ -505,6 +518,26 @@ const App = () => {
             const ciudadesData = data[prevData.paisExpedicion]?.departamentos[value] || [];
             setCiudades(ciudadesData);
         }
+
+        const today = new Date().toISOString().split("T")[0];
+
+        if (["fechadediligenciamiento", "fechadevinculacionalcargo", "fechadedesvinculacioncargo"].includes(name)) {
+          if (value >= today) {
+            return;
+          }
+        }        
+
+        let value = e.target.value.toLowerCase();
+
+        // Expresiones regulares para detectar si ya contiene alguna de las extensiones permitidas
+        const domainPattern = /\.(com|es|net|org|edu|gov|co|mx|ar)$/;
+        
+        // Si el usuario ya escribió una de las extensiones, no permite agregar más caracteres
+        if (domainPattern.test(value) && value.length > value.match(domainPattern).index + value.match(domainPattern)[0].length) {
+          return;
+        }
+    
+        setFormData({ ...formData, correoElectronico: e.target.value });
 
         if (name === "paisResidencia") {
             const departamentosData = data[value]?.departamentos || {};
@@ -1008,6 +1041,7 @@ if (procesoExitoso) {
             name="fechadediligenciamiento"
             value={formData.fechadediligenciamiento}
             onChange={handleChange}
+            max={new Date().toISOString().split("T")[0]}
             required
           />
           {errores.fechadediligenciamiento && (
@@ -1494,6 +1528,7 @@ if (procesoExitoso) {
                         name="fechadevinculacionalcargo"
                         value={formData.fechadevinculacionalcargo}
                         onChange={handleChange}
+                        max={new Date().toISOString().split("T")[0]}
                         required
                       />
                       {errores.fechadevinculacionalcargo && (<span style={{ color: "red", fontSize: "12px", marginBottom: "20px", display: "block" }}>{errores.fechadediligenciamiento}</span>)}
@@ -1505,6 +1540,7 @@ if (procesoExitoso) {
                         name="fechadedesvinculacioncargo"
                         value={formData.fechadedesvinculacioncargo}
                         onChange={handleChange}
+                        max={new Date().toISOString().split("T")[0]}
                         required
                       />
                       {errores.fechadedesvinculacioncargo && (<span style={{ color: "red", fontSize: "12px", marginBottom: "20px", display: "block" }}>{errores.fechadediligenciamiento}</span>)}
@@ -1629,10 +1665,7 @@ if (procesoExitoso) {
               type="email"
               name="correoElectronico"
               value={formData.correoElectronico}
-              onChange={(e) => {
-                const value = e.target.value;
-                setFormData({ ...formData, correoElectronico: value });
-              }}
+              onChange={handleChange}
               pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.(com|es|net|org|edu|gov|co|mx|ar)$"
               title="Debe ser un correo electrónico válido (e.g., ejemplo@dominio.com)"
               required
@@ -1813,7 +1846,7 @@ if (procesoExitoso) {
 
 
 
-                    <label>País de Residencia *<span data-tooltip-id="tooltip-accionista.
+                    <label>País de Residencia del Accionista *<span data-tooltip-id="tooltip-accionista.
                     " className="tooltip-icon" > ℹ️ </span> </label>
                     <select
                       value={accionista.paisResidenciaaccionista}
@@ -3602,7 +3635,7 @@ if (procesoExitoso) {
                 <Tooltip id="tooltip-nombredelpep" place="top" effect="solid"> Por favor Diligencie el nombre del PEP que tiene relacion. </Tooltip>                
                
 
-                <label>Tipo de Documento Representante Legal *<span data-tooltip-id="tooltip-tipoDocumentorl" className="tooltip-icon" > ℹ️ </span> </label>
+                <label>Tipo de Documento del PEP *<span data-tooltip-id="tooltip-tipoDocumentorl" className="tooltip-icon" > ℹ️ </span> </label>
                 <select
                   name="tipoDocumentorl"
                   value={formData.tipoDocumentorl}
@@ -3621,7 +3654,7 @@ if (procesoExitoso) {
 
 
              
-                <label> Número de Documento Representante Legal* <span data-tooltip-id="tooltip-numeroDocumentorl" className="tooltip-icon" > ℹ️ </span></label>
+                <label> Número de Documento del PEP* <span data-tooltip-id="tooltip-numeroDocumentorl" className="tooltip-icon" > ℹ️ </span></label>
                 <input
                     type="text"
                     name="numeroDocumentoRepresentante"
@@ -3726,8 +3759,9 @@ if (procesoExitoso) {
                         onChange={(e) => {
                           const rawValue = e.target.value.replace(/\D/g, ""); // Elimina todo excepto números
                           const formattedValue = `$ ${parseInt(rawValue || 0).toLocaleString("es-CO")}`;
-                          setFormData({ ...formData, valoradministrado: formattedValue });
+                          setFormData({ ...formData, ingresosMensuales: formattedValue });
                         }}
+                     
                         maxLength="20"
                         placeholder="$ 0"
                         required
@@ -3787,17 +3821,17 @@ if (procesoExitoso) {
                 <input
                   type="text"
                   name="cargorefcom"
-                  value={formData.nombrerefcom}
+                  value={formData.cargorefcom}
                   onChange={handleChange}
                   maxLength="100"
                 />  
                 <Tooltip id="tooltip-cargorefcom" place="top" effect="solid"> Por favor Diligencie el nombre del PEP que tiene relacion. </Tooltip>                
                
-                <label>Teléfono Celular*<span data-tooltip-id="tooltip-telefonoCelularrefcom" className="tooltip-icon" > ℹ️ </span></label>
+                <label>Teléfono Celular*<span data-tooltip-id="tooltip-telefonoCelularrefcom1" className="tooltip-icon" > ℹ️ </span></label>
                 <input
                   type="text"
-                  name="telefonoCelularrefcom"
-                  value={formData.telefonoCelularrefcom}
+                  name="telefonoCelularrefcom1"
+                  value={formData.telefonoCelularrefcom1}
                   onChange={(e) => {
                     const value = e.target.value;
                     if (/^\d*$/.test(value) && value.length <= 10) {
@@ -3808,18 +3842,15 @@ if (procesoExitoso) {
                   maxLength="10"
                   required
                 />
-                {errores.telefonoCelularrefcom && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.telefonoCelular}</span>)}            
-                <Tooltip id="tooltip-telefonoCelularrefcom" place="top" effect="solid"> Por favor Diligencie su numero de telefono. </Tooltip>
+                {errores.telefonoCelularrefcom && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.telefonoCelularrefcom1}</span>)}            
+                <Tooltip id="tooltip-telefonoCelularrefcom1" place="top" effect="solid"> Por favor Diligencie su numero de telefono. </Tooltip>
 
                 <label>Correo Electrónico *<span data-tooltip-id="tooltip-correoElectronicorefcom" className="tooltip-icon" > ℹ️ </span></label>
                 <input
                   type="email"
                   name="correoElectronicorefcom"
                   value={formData.correoElectronicorefcom}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setFormData({ ...formData, correoElectronicorefcom: value });
-                  }}
+                  onChange={handleChange}
                   pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.(com|es|net|org|edu|gov|co|mx|ar)$"
                   title="Debe ser un correo electrónico válido (e.g., ejemplo@dominio.com)"
                   required
@@ -3895,10 +3926,7 @@ if (procesoExitoso) {
                   type="email"
                   name="correoElectronicoreffin"
                   value={formData.correoElectronicoreffin}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setFormData({ ...formData, correoElectronicoreffin: value });
-                  }}
+                  onChange={handleChange}
                   pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.(com|es|net|org|edu|gov|co|mx|ar)$"
                   title="Debe ser un correo electrónico válido (e.g., ejemplo@dominio.com)"
                   required
