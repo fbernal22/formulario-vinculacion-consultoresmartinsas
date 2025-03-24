@@ -451,11 +451,10 @@ const App = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-
+    const newValue = type === "checkbox" ? checked : value;
     
 
     setFormData((prevData) => {
-      let newValue = type === "checkbox" ? checked : value;
 
         // Si cambia el tipo de documento del representante, limpiar el número de documento
         if (name === "tipoDocumentorl") {
