@@ -980,7 +980,7 @@ const App = () => {
           const respuestaExcel = await axios.post("https://backend-vinculacion.onrender.com/guardar-excel", formData);
           alert(respuestaExcel.data.mensaje);
           
-          console.log("📂 Datos guardados en Excel correctamente");
+          console.log("📂 Datos guardados en la Base de Datos correctamente");
 
       } catch (error) {
           console.error("❌ Error al guardar en Excel:", error);
