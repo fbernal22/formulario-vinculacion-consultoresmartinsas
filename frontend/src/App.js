@@ -2228,27 +2228,22 @@ if (procesoExitoso) {
 
 
 
-                    {formData.paisResidencia === "Colombia" && (
-                      <>            
-                        <label>Departamento de Residencia *<span data-tooltip-id="tooltip-departamentoResidenciaaccionistapj" className="tooltip-icon" > ℹ️ </span></label>
+                    {formData.paisResidenciaaccionista === "Colombia" && (
+                      <>
+                        <label>Departamento de Residencia</label>
                         <select
                           name="departamentoResidenciaaccionistapj"
                           value={formData.departamentoResidenciaaccionistapj}
                           onChange={handleChange}
-                          required
                         >
                           <option value="">Seleccione un departamento</option>
-                          {departamentos.map((departamento) => (
-                            <option key={departamento} value={departamento}>
-                              {departamento}
+                          {departamentosAccionista.map((dep) => (
+                            <option key={dep} value={dep}>
+                              {dep}
                             </option>
                           ))}
                         </select>
-                        {errores.departamentoResidenciaaccionistapj && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.departamentoResidenciaaccionistapj}</span>)}  
-                        <Tooltip id="tooltip-departamentoResidenciaaccionistapj" place="top" effect="solid"> Diligenciar el departamento de residencia. </Tooltip>
-                          
                       </>
-                      
                     )}
                   
                     <label>Ciudad de Residencia *<span data-tooltip-id="tooltip-ciudadResidenciaaccionistapj" className="tooltip-icon" > ℹ️ </span></label>
