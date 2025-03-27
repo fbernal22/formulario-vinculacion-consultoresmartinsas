@@ -2204,23 +2204,23 @@ if (procesoExitoso) {
                     <label>País de Residencia * <span data-tooltip-id="tooltip-paisResidenciaaccionistapj" className="tooltip-icon" > ℹ️ </span></label>
                     <select
                       name="paisResidenciaaccionistapj"
-                    value={formData.paisResidenciaaccionistapj}
-                    onChange={(e) => {
-                      handleChange(e);
-                      if (e.target.value === "Colombia") {
-                        setDepartamentos(Object.keys(data.Colombia.departamentos));
-                      } else {
-                        setDepartamentos([]);
-                      }
-                    }}
-                    required
-                  >
-                    <option value="">Seleccione un país</option>
-                    {["Colombia", ...Object.keys(data.Paises).filter(p => p !== "Colombia")].map((pais) => (
-                      <option key={pais} value={pais}>
-                        {pais}
-                      </option>
-                    ))}
+                      value={formData.paisResidenciaaccionistapj}
+                      onChange={(e) => {
+                        handleChange(e);
+                        if (e.target.value === "Colombia") {
+                          setDepartamentosAccionista(Object.keys(data.Colombia.departamentos));
+                        } else {
+                          setDepartamentosAccionista([]);
+                        }
+                      }}
+                      required
+                    >
+                      <option value="">Seleccione un país</option>
+                      {["Colombia", ...Object.keys(data.Paises).filter(p => p !== "Colombia")].map((pais) => (
+                        <option key={pais} value={pais}>
+                          {pais}
+                        </option>
+                      ))}
                     </select>
                     {errores.paisResidenciaaccionistapj && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.paisResidenciaaccionistapj}</span>)}            
                     <Tooltip id="tooltip-paisResidenciaaccionistapj" place="top" effect="solid"> Diligenciar el pais de residencia. </Tooltip>
@@ -2228,18 +2228,19 @@ if (procesoExitoso) {
 
 
 
-                    {formData.paisResidenciaaccionista === "Colombia" && (
+                    {formData.paisResidenciaaccionistapj === "Colombia" && (
                       <>
-                        <label>Departamento de Residencia</label>
+                        <label>Departamento de Residencia *</label>
                         <select
                           name="departamentoResidenciaaccionistapj"
                           value={formData.departamentoResidenciaaccionistapj}
                           onChange={handleChange}
+                          required
                         >
                           <option value="">Seleccione un departamento</option>
-                          {departamentosAccionista.map((dep) => (
-                            <option key={dep} value={dep}>
-                              {dep}
+                          {Object.keys(data.Colombia.departamentos).map((departamento) => (
+                            <option key={departamento} value={departamento}>
+                              {departamento}
                             </option>
                           ))}
                         </select>
