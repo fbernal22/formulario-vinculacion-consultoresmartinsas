@@ -4034,13 +4034,7 @@ if (procesoExitoso) {
             {errores.declaraVeracidad && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.declaraVeracidad}</span>)}            
             <Tooltip id="tooltip-declaraVeracidad" place="top" effect="solid"> Declaro que toda la información proporcionada en este formulario es veraz, completa y precisa. Entiendo que cualquier falsedad o inexactitud puede conllevar sanciones legales y/o la suspensión de mis servicios.</Tooltip>
 
-            {(
-              (formData.tipoPersona === "PN" && formData.esPEP === "Si") ||
-              (formData.tipoPersona === "PJ" && (
-                formData.declaracionPEPJuridica === "Si" ||
-                (Array.isArray(formData.accionistasPJ) && formData.accionistasPJ.some(accionista => accionista.esPEP === "Si"))
-              ))
-            ) && (
+              {(formData.esPEP === "Si") && (
               <div className="switch-container">
                 <label>Declaración de Persona Expuesta Políticamente*<span data-tooltip-id="tooltip-declaracionpep" className="tooltip-icon"> ℹ️ </span></label>
                 <label className="switch">
