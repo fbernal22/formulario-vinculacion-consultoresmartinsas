@@ -2203,25 +2203,25 @@ if (procesoExitoso) {
 
                     <label>País de Residencia * <span data-tooltip-id="tooltip-paisResidenciaaccionistapj" className="tooltip-icon" > ℹ️ </span></label>
                     <select
-                      name="paisResidenciaaccionistapj"
-                      value={formData.paisResidenciaaccionistapj}
-                      onChange={(e) => {
-                        handleChange(e);
-                        if (e.target.value === "Colombia") {
-                          setDepartamentosAccionista(Object.keys(data.Colombia.departamentos));
-                        } else {
-                          setDepartamentosAccionista([]);
-                        }
-                      }}
-                      required
-                    >
-                      <option value="">Seleccione un país</option>
-                      {["Colombia", ...Object.keys(data.Paises).filter(p => p !== "Colombia")].map((pais) => (
-                        <option key={pais} value={pais}>
-                          {pais}
-                        </option>
-                      ))}
-                    </select>
+                        name="paisResidenciaaccionistapj"
+                        value={formData.paisResidenciaaccionistapj}
+                        onChange={(e) => {
+                          handleChange(e);
+                          if (e.target.value === "Colombia") {
+                            setDepartamentosAccionista(Object.keys(data.Colombia.departamentos));
+                          } else {
+                            setDepartamentosAccionista([]);
+                          }
+                        }}
+                        required
+                      >
+                        <option value="">Seleccione un país</option>
+                        {["Colombia", ...Object.keys(data.Paises).filter(p => p !== "Colombia")].map((pais) => (
+                          <option key={pais} value={pais}>
+                            {pais}
+                          </option>
+                        ))}
+                      </select>
                     {errores.paisResidenciaaccionistapj && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.paisResidenciaaccionistapj}</span>)}            
                     <Tooltip id="tooltip-paisResidenciaaccionistapj" place="top" effect="solid"> Diligenciar el pais de residencia. </Tooltip>
 
@@ -4034,12 +4034,13 @@ if (procesoExitoso) {
             {errores.declaraVeracidad && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.declaraVeracidad}</span>)}            
             <Tooltip id="tooltip-declaraVeracidad" place="top" effect="solid"> Declaro que toda la información proporcionada en este formulario es veraz, completa y precisa. Entiendo que cualquier falsedad o inexactitud puede conllevar sanciones legales y/o la suspensión de mis servicios.</Tooltip>
 
-            {/* Condición para habilitar el campo declaracionpep */}
-            {(formData.tipoPersona === "PN" && formData.esPEP === "Si") ||
-            (formData.tipoPersona === "PJ" && (
-                formData.declaracionPEPJuridica === "Si" || 
+            {(
+              (formData.tipoPersona === "PN" && formData.esPEP === "Si") ||
+              (formData.tipoPersona === "PJ" && (
+                formData.declaracionPEPJuridica === "Si" ||
                 (Array.isArray(formData.accionistasPJ) && formData.accionistasPJ.some(accionista => accionista.esPEP === "Si"))
-            )) ? (
+              ))
+            ) && (
               <div className="switch-container">
                 <label>Declaración de Persona Expuesta Políticamente*<span data-tooltip-id="tooltip-declaracionpep" className="tooltip-icon"> ℹ️ </span></label>
                 <label className="switch">
@@ -4055,16 +4056,15 @@ if (procesoExitoso) {
                   <span className="slider round"></span>
                 </label>
               </div>
-            ) : (
-              <p style={{ display: "none" }}></p> // No muestra el campo si no aplica
             )}
             {errores.declaracionpep && (
               <span style={{ color: "red", fontSize: "12px", marginBottom: "20px", display: "block" }}>
                 {errores.declaracionpep}
               </span>
             )}
-            <Tooltip id="tooltip-declaracionpep" place="top" effect="solid"> Confirmo si soy o he sido una Persona Expuesta Políticamente (PEP) o si tengo vínculos con alguien que lo sea. Esta información es requerida para cumplir con las normativas de prevención de lavado de activos y financiamiento del terrorismo.</Tooltip>
-        
+            <Tooltip id="tooltip-declaracionpep" place="top" effect="solid">
+              Confirmo si soy o he sido una Persona Expuesta Políticamente (PEP) o si tengo vínculos con alguien que lo sea. Esta información es requerida para cumplir con las normativas de prevención de lavado de activos y financiamiento del terrorismo.
+            </Tooltip>        
           </>
         )}
 
