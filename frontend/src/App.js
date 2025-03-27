@@ -338,12 +338,13 @@ const App = () => {
     transaccionesenelextranjero: "",
     indiquecual1: "",
     responsabilidadfiscal: "",
+    telefonoCelularreffin: "",
     pais: "",
     numeroNIT: "",
     tipoDocumentopep: "",
     paisResidenciaaccionista: "",
     departamentoResidenciaaccionista: "",
-    ciudadResidenciaaccionista: "",
+    ciudadResidenciaaccionistapj: "",
     numeroDocumentopep: "",
     fechadevinculacioncargo: "",
     fechadedesvinculacioncargo: "",
@@ -359,7 +360,6 @@ const App = () => {
     cargoreffin: "",
     fideicomitentepat: "",
     correoElectronicoreffin: "",
-    telefonoCelularreffin: "",
     EntidadFiduciaria: "",
     entidadpublica: "",
     aceptaTerminos: false,
@@ -367,6 +367,8 @@ const App = () => {
     declaraVeracidad: false,
     declaracionpep: false,
   });
+  const [departamentosAccionista, setDepartamentosAccionista] = useState([]);
+  const [ciudadesAccionista, setCiudadesAccionista] = useState([]);
 
 
   const [errores, setErrores] = useState({});
@@ -490,7 +492,7 @@ const App = () => {
         if (name === "Contraparte") {
             return {
                 ...prevData,
-                [name]: value,
+                [name]: newValue,
                 tipodecontraparte: "" 
             };
         }
@@ -505,6 +507,17 @@ const App = () => {
         if (name === "departamentoNacimiento") {
             const ciudadesData = data[prevData.paisNacimiento]?.departamentos[value] || [];
             setCiudades(ciudadesData);
+        }
+
+        if (name === "paisResidenciaaccionista") {
+          const departamentosData = data[value]?.departamentos || {};
+          setDepartamentosAccionista(Object.keys(departamentosData));
+          setCiudadesAccionista([]);
+        }
+        
+        if (name === "departamentoResidenciaaccionista") {
+          const ciudadesData = data[formData.paisResidenciaaccionista]?.departamentos[value] || [];
+          setCiudadesAccionista(ciudadesData);
         }
 
         if (name === "paisExpedicion") {
@@ -526,18 +539,21 @@ const App = () => {
           }
         }        
 
-        let value = e.target.value.toLowerCase();
-
-        // Expresiones regulares para detectar si ya contiene alguna de las extensiones permitidas
-        const domainPattern = /\.(com|es|net|org|edu|gov|co|mx|ar)$/;
-        
-        // Si el usuario ya escribió una de las extensiones, no permite agregar más caracteres
-        if (domainPattern.test(value) && value.length > value.match(domainPattern).index + value.match(domainPattern)[0].length) {
-          return;
-        }
+        if (name === "correoElectronico") {
+          const email = newValue.toLowerCase();
+          const domainPattern = /\.(com|es|net|org|edu|gov|co|mx|ar)$/;
+          const match = email.match(domainPattern);
     
-        setFormData({ ...formData, correoElectronico: e.target.value });
-
+          if (match && email.length > match.index + match[0].length) {
+            return prevData; // Detener escritura excesiva después del dominio
+          }
+    
+          return {
+            ...prevData,
+            [name]: email
+          };
+        }
+        
         if (name === "paisResidencia") {
             const departamentosData = data[value]?.departamentos || {};
             setDepartamentos(Object.keys(departamentosData));
@@ -610,6 +626,16 @@ const App = () => {
                 [name]: value
             };
         }
+
+        if (name === "telefonoCelularrefcom" && value === formData.telefonoCelular) {
+          alert("El número de referencia comercial no puede ser igual al teléfono principal.");
+          return prevData;
+        }
+        
+        if (name === "telefonoCelularreffin" && value === formData.telefonoCelular) {
+          alert("El número del contacto financiero no puede ser igual al teléfono principal.");
+          return prevData;
+        }        
 
         return {
             ...prevData,
@@ -1229,7 +1255,7 @@ if (procesoExitoso) {
                   required
                 >
                   <option value="">Seleccione un país</option>
-                  {Object.keys(data.Paises).concat("Colombia").map((pais) => (
+                  {["Colombia", ...Object.keys(data.Paises).filter(p => p !== "Colombia")].map((pais) => (
                     <option key={pais} value={pais}>
                       {pais}
                     </option>
@@ -1304,7 +1330,7 @@ if (procesoExitoso) {
                   required
                 >
                   <option value="">Seleccione un país</option>
-                  {Object.keys(data.Paises).concat("Colombia").map((pais) => (
+                  {["Colombia", ...Object.keys(data.Paises).filter(p => p !== "Colombia")].map((pais) => (
                     <option key={pais} value={pais}>
                       {pais}
                     </option>
@@ -1703,7 +1729,7 @@ if (procesoExitoso) {
               required
             >
               <option value="">Seleccione un país</option>
-              {Object.keys(data.Paises).concat("Colombia").map((pais) => (
+              {["Colombia", ...Object.keys(data.Paises).filter(p => p !== "Colombia")].map((pais) => (
                 <option key={pais} value={pais}>
                   {pais}
                 </option>
@@ -1770,8 +1796,8 @@ if (procesoExitoso) {
                       tipoIdentificacion: "",
                       numeroIdentificacion: "",
                       paisResidenciaaccionista: "",
-                      departamentoResidenciaaccionista: "",
-                      ciudadResidenciaaccionista: "",
+                      departamentoResidenciaaccionista:"",
+                      ciudadResidenciaaccionista:"",
                       participacion: "",
                       pep: "",
                       nombreentidadpn: "",
@@ -1845,39 +1871,40 @@ if (procesoExitoso) {
 
 
 
-                    <label>País de Residencia del Accionista *<span data-tooltip-id="tooltip-accionista.
-                    " className="tooltip-icon" > ℹ️ </span> </label>
+                    <label>País de Residencia * <span data-tooltip-id="tooltip-paisResidenciaaccionista" className="tooltip-icon" > ℹ️ </span></label>
                     <select
-                      value={accionista.paisResidenciaaccionista}
-                      onChange={(e) => {
-                        const updatedAccionistas = [...accionistasPN];
-                        updatedAccionistas[index].paisResidenciaaccionista = e.target.value;
-                        setAccionistasPN(updatedAccionistas);
-                      }}
-                      required
-                    >
-                      <option value="">Seleccione un país</option>
-                      {Object.keys(data.Paises).concat("Colombia").map((pais) => (
-                        <option key={pais} value={pais}>
-                          {pais}
-                        </option>
-                      ))}
+                      name="paisResidenciaaccionista"
+                    value={formData.paisResidenciaaccionista}
+                    onChange={(e) => {
+                      handleChange(e);
+                      if (e.target.value === "Colombia") {
+                        setDepartamentos(Object.keys(data.Colombia.departamentos));
+                      } else {
+                        setDepartamentos([]);
+                      }
+                    }}
+                    required
+                  >
+                    <option value="">Seleccione un país</option>
+                    {["Colombia", ...Object.keys(data.Paises).filter(p => p !== "Colombia")].map((pais) => (
+                      <option key={pais} value={pais}>
+                        {pais}
+                      </option>
+                    ))}
                     </select>
-                    <Tooltip id="tooltip-accionista.paisResidenciaaccionista" place="top" effect="solid"> Diligenciar el pais de donde se encuentra la oficina. </Tooltip>
+                    {errores.paisResidenciaaccionista && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.paisResidenciaaccionista}</span>)}            
+                    <Tooltip id="tooltip-paisResidenciaaccionista" place="top" effect="solid"> Diligenciar el pais de residencia. </Tooltip>
 
 
 
-                    {formData.paisResidenciaaccionista === "Colombia" && (
+
+                    {formData.paisResidencia === "Colombia" && (
                       <>            
                         <label>Departamento de Residencia *<span data-tooltip-id="tooltip-departamentoResidenciaaccionista" className="tooltip-icon" > ℹ️ </span></label>
                         <select
                           name="departamentoResidenciaaccionista"
-                          value={accionista.departamentoResidenciaaccionista}
-                          onChange={(e) => {
-                            const updatedAccionistas = [...accionistasPN];
-                            updatedAccionistas[index].departamentoResidenciaaccionista = e.target.value;
-                            setAccionistasPN(updatedAccionistas);
-                          }}
+                          value={formData.departamentoResidenciaaccionista}
+                          onChange={handleChange}
                           required
                         >
                           <option value="">Seleccione un departamento</option>
@@ -1887,7 +1914,7 @@ if (procesoExitoso) {
                             </option>
                           ))}
                         </select>
-                        {errores.departamentoResidenciaaccionista && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.departamentoResidencia}</span>)}  
+                        {errores.departamentoResidenciaaccionista && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.departamentoResidenciaaccionista}</span>)}  
                         <Tooltip id="tooltip-departamentoResidenciaaccionista" place="top" effect="solid"> Diligenciar el departamento de residencia. </Tooltip>
                           
                       </>
@@ -1898,15 +1925,14 @@ if (procesoExitoso) {
                     <input
                       type="text"
                       name="ciudadResidenciaaccionista"
-                      value={accionista.ciudadResidenciaaccionista}
-                      onChange={(e) => {
-                        const updatedAccionistas = [...accionistasPN];
-                        updatedAccionistas[index].ciudadResidenciaaccionista = e.target.value;
-                        setAccionistasPN(updatedAccionistas);
-                      }}
+                      value={formData.ciudadResidenciaaccionista}
+                      onChange={handleChange}
                       required
                     />
-                 
+                    {errores.ciudadResidenciaaccionista && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.ciudadResidencia}</span>)}            
+                    <Tooltip id="tooltip-ciudadResidenciaaccionista" place="top" effect="solid"> Diligenciar la ciudad de residencia. </Tooltip>
+
+
                     <label>Participación Accionaria (%) *<span data-tooltip-id="tooltip-accionista.ciudadResidenciaaccionista" className="tooltip-icon" > ℹ️ </span> </label>
                     <input
                       type="number"
@@ -2100,8 +2126,9 @@ if (procesoExitoso) {
                       razonSocial: "",
                       tipoIdentificacionpj: "",
                       numeroIdentificacionpj: "",
-                      paisResidenciapj: "",
-                      departamentoResidenciapj: "",
+                      paisResidenciaaccionistapj:"",
+                      departamentoResidenciaaccionistapj:"",
+                      ciudadResidenciaaccionistapj:"",
                       participacionpj: "",
                       peppj: "",
                       nombredelpep: "",
@@ -2176,39 +2203,40 @@ if (procesoExitoso) {
                     />
                     <Tooltip id="tooltip-accionista.numeroIdentificacionpj" place="top" effect="solid"> Por favor diligencie el numero de identificacion de la empresa. </Tooltip>
 
-                    <label>País de Residencia *<span data-tooltip-id="tooltip-accionista.paisResidenciapj" className="tooltip-icon" > ℹ️ </span> </label>
+                    <label>País de Residencia * <span data-tooltip-id="tooltip-paisResidenciaaccionistapj" className="tooltip-icon" > ℹ️ </span></label>
                     <select
-                      value={accionista.paisResidenciapj}
-                      onChange={(e) => {
-                        const updatedAccionistas = accionistasPJ.map((acc, i) =>
-                            i === index ? { ...acc, paisResidenciapj: e.target.value } : acc
-                        );
-                        setAccionistasPJ(updatedAccionistas);
+                      name="paisResidenciaaccionistapj"
+                    value={formData.paisResidenciaaccionistapj}
+                    onChange={(e) => {
+                      handleChange(e);
+                      if (e.target.value === "Colombia") {
+                        setDepartamentos(Object.keys(data.Colombia.departamentos));
+                      } else {
+                        setDepartamentos([]);
+                      }
                     }}
-                      required
-                    >
-                      <option value="">Seleccione un país</option>
-                      {Object.keys(data.Paises).concat("Colombia").map((pais) => (
-                        <option key={pais} value={pais}>
-                          {pais}
-                        </option>
-                      ))}
+                    required
+                  >
+                    <option value="">Seleccione un país</option>
+                    {["Colombia", ...Object.keys(data.Paises).filter(p => p !== "Colombia")].map((pais) => (
+                      <option key={pais} value={pais}>
+                        {pais}
+                      </option>
+                    ))}
                     </select>
-                    <Tooltip id="tooltip-accionista.paisResidenciapj" place="top" effect="solid"> Diligenciar el pais de donde se encuentra la oficina. </Tooltip>
+                    {errores.paisResidenciaaccionistapj && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.paisResidenciaaccionistapj}</span>)}            
+                    <Tooltip id="tooltip-paisResidenciaaccionistapj" place="top" effect="solid"> Diligenciar el pais de residencia. </Tooltip>
 
 
 
-                    {accionista.paisResidencia === "Colombia" && (
-                      <>                    
-                        <label>Departamento de Residencia *<span data-tooltip-id="tooltip-accionista.departamentoResidenciapj" className="tooltip-icon" > ℹ️ </span> </label>
+
+                    {formData.paisResidencia === "Colombia" && (
+                      <>            
+                        <label>Departamento de Residencia *<span data-tooltip-id="tooltip-departamentoResidenciaaccionistapj" className="tooltip-icon" > ℹ️ </span></label>
                         <select
-                          value={accionista.departamentoResidenciapj}
-                          onChange={(e) => {
-                            const updatedAccionistas = accionistasPJ.map((acc, i) =>
-                                i === index ? { ...acc, departamentoResidenciapj: e.target.value } : acc
-                            );
-                            setAccionistasPJ(updatedAccionistas);
-                        }}
+                          name="departamentoResidenciaaccionistapj"
+                          value={formData.departamentoResidenciaaccionistapj}
+                          onChange={handleChange}
                           required
                         >
                           <option value="">Seleccione un departamento</option>
@@ -2218,11 +2246,25 @@ if (procesoExitoso) {
                             </option>
                           ))}
                         </select>
+                        {errores.departamentoResidenciaaccionistapj && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.departamentoResidenciaaccionistapj}</span>)}  
+                        <Tooltip id="tooltip-departamentoResidenciaaccionistapj" place="top" effect="solid"> Diligenciar el departamento de residencia. </Tooltip>
+                          
                       </>
+                      
                     )}
-                    <Tooltip id="tooltip-accionista.departamentoResidenciapj" place="top" effect="solid"> Diligenciar el departamento de donde se encuentra la oficina. </Tooltip>
+                  
+                    <label>Ciudad de Residencia *<span data-tooltip-id="tooltip-ciudadResidenciaaccionistapj" className="tooltip-icon" > ℹ️ </span></label>
+                    <input
+                      type="text"
+                      name="ciudadResidenciaaccionistapj"
+                      value={formData.ciudadResidenciaaccionistapj}
+                      onChange={handleChange}
+                      required
+                    />
+                    {errores.ciudadResidenciaaccionistapj && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.ciudadResidencia}</span>)}            
+                    <Tooltip id="tooltip-ciudadResidenciaaccionistapj" place="top" effect="solid"> Diligenciar la ciudad de residencia. </Tooltip>
 
-                    
+
                 
                     <label>Participación Accionaria (%) *<span data-tooltip-id="tooltip-accionista.participacionpj" className="tooltip-icon" > ℹ️ </span> </label>
                     <input
@@ -3834,14 +3876,14 @@ if (procesoExitoso) {
                   onChange={(e) => {
                     const value = e.target.value;
                     if (/^\d*$/.test(value) && value.length <= 10) {
-                      setFormData({ ...formData, telefonoCelularrefcom: value });
+                      setFormData({ ...formData, telefonoCelularrefcom1: value });
                     }
                   }}
                   pattern="\d*"
                   maxLength="10"
                   required
                 />
-                {errores.telefonoCelularrefcom && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.telefonoCelularrefcom1}</span>)}            
+                {errores.telefonoCelularrefcom1 && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.telefonoCelularrefcom1}</span>)}            
                 <Tooltip id="tooltip-telefonoCelularrefcom1" place="top" effect="solid"> Por favor Diligencie su numero de telefono. </Tooltip>
 
                 <label>Correo Electrónico *<span data-tooltip-id="tooltip-correoElectronicorefcom" className="tooltip-icon" > ℹ️ </span></label>
@@ -3902,23 +3944,23 @@ if (procesoExitoso) {
                 />  
                 <Tooltip id="tooltip-cargoreffin" place="top" effect="solid"> Por favor Diligencie el nombre del PEP que tiene relacion. </Tooltip>                
                
-                <label>Teléfono Celular*<span data-tooltip-id="tooltip-telefonoCelularreffin" className="tooltip-icon" > ℹ️ </span></label>
+                <label>Teléfono Celular*<span data-tooltip-id="tooltip-telefonoCelularrefcom" className="tooltip-icon" > ℹ️ </span></label>
                 <input
                   type="text"
-                  name="telefonoCelularreffin"
+                  name="telefonoCelularrefcom"
                   value={formData.telefonoCelularrefcom}
                   onChange={(e) => {
                     const value = e.target.value;
                     if (/^\d*$/.test(value) && value.length <= 10) {
-                      setFormData({ ...formData, telefonoCelularreffin: value });
+                      setFormData({ ...formData, telefonoCelularrefcom: value });
                     }
                   }}
                   pattern="\d*"
                   maxLength="10"
                   required
                 />
-                {errores.telefonoCelularreffin && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.telefonoCelular}</span>)}            
-                <Tooltip id="tooltip-telefonoCelularreffin" place="top" effect="solid"> Por favor Diligencie su numero de telefono. </Tooltip>
+                {errores.telefonoCelularrefcom && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.telefonoCelular}</span>)}            
+                <Tooltip id="tooltip-telefonoCelularrefcom" place="top" effect="solid"> Por favor Diligencie su numero de telefono. </Tooltip>
 
                 <label>Correo Electrónico *<span data-tooltip-id="tooltip-correoElectronicoreffin" className="tooltip-icon" > ℹ️ </span></label>
                 <input
