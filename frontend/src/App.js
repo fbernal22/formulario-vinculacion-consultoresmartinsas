@@ -950,9 +950,10 @@ const App = () => {
   const handleSubmit = async (e) => {
       e.preventDefault();
 
-      if (!formData.numeroDocumento) {
-          alert("Por favor, ingrese su número de documento.");
-          return;
+      if ((formData.tipoPersona === "PN" && !formData.numeroDocumento) ||
+          (formData.tipoPersona === "PJ" && !formData.numeroNIT)) {
+        alert("Por favor, ingrese su número de documento.");
+        return;
       }
 
       const numeroDocumento = formData?.numeroDocumento || "Desconocido";
