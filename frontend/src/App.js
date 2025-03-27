@@ -342,9 +342,12 @@ const App = () => {
     pais: "",
     numeroNIT: "",
     tipoDocumentopep: "",
+    paisResidenciaaccionistapj: "",
+    departamentoResidenciaaccionistapj: "",
+    ciudadResidenciaaccionistapj: "",
     paisResidenciaaccionista: "",
     departamentoResidenciaaccionista: "",
-    ciudadResidenciaaccionistapj: "",
+    ciudadResidenciaaccionista: "",
     numeroDocumentopep: "",
     fechadevinculacioncargo: "",
     fechadedesvinculacioncargo: "",
@@ -511,13 +514,13 @@ const App = () => {
 
         if (name === "paisResidenciaaccionista") {
           const departamentosData = data[value]?.departamentos || {};
-          setDepartamentosAccionista(Object.keys(departamentosData));
-          setCiudadesAccionista([]);
+          setdepartamentoResidenciaaccionista(Object.keys(departamentosData));
+          setciudadResidenciaaccionista([]);
         }
         
         if (name === "departamentoResidenciaaccionista") {
           const ciudadesData = data[formData.paisResidenciaaccionista]?.departamentos[value] || [];
-          setCiudadesAccionista(ciudadesData);
+          setciudadResidenciaaccionista(ciudadesData);
         }
 
         if (name === "paisExpedicion") {
@@ -565,15 +568,15 @@ const App = () => {
             setCiudades(ciudadesData);
         }
 
-        if (name === "paisResidenciaaccionista") {
+        if (name === "paisResidenciaaccionistapj") {
           const departamentosData = data[value]?.departamentos || {};
-          setDepartamentos(Object.keys(departamentosData));
-          setCiudades([]);
+          setdepartamentoResidenciaaccionistapj(Object.keys(departamentosData));
+          setciudadResidenciaaccionistapj([]);
         }
 
-        if (name === "departamentoResidenciaaccionista") {
+        if (name === "ciudadResidenciaaccionistapj") {
             const ciudadesData = data[prevData.paisResidenciaaccionista]?.departamentos[value] || [];
-            setCiudades(ciudadesData);
+            setciudadResidenciaaccionistapj(ciudadesData);
         }
 
         // Manejo de "Cotiza en la Bolsa"
@@ -1898,9 +1901,9 @@ if (procesoExitoso) {
 
 
 
-                    {formData.paisResidencia === "Colombia" && (
-                      <>            
-                        <label>Departamento de Residencia *<span data-tooltip-id="tooltip-departamentoResidenciaaccionista" className="tooltip-icon" > ℹ️ </span></label>
+                    {formData.paisResidenciaaccionista === "Colombia" && (
+                      <>
+                        <label>Departamento de Residencia *</label>
                         <select
                           name="departamentoResidenciaaccionista"
                           value={formData.departamentoResidenciaaccionista}
@@ -1908,17 +1911,13 @@ if (procesoExitoso) {
                           required
                         >
                           <option value="">Seleccione un departamento</option>
-                          {departamentos.map((departamento) => (
-                            <option key={departamento} value={departamento}>
-                              {departamento}
+                          {departamentosAccionista.map((dep) => (
+                            <option key={dep} value={dep}>
+                              {dep}
                             </option>
                           ))}
                         </select>
-                        {errores.departamentoResidenciaaccionista && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.departamentoResidenciaaccionista}</span>)}  
-                        <Tooltip id="tooltip-departamentoResidenciaaccionista" place="top" effect="solid"> Diligenciar el departamento de residencia. </Tooltip>
-                          
                       </>
-                      
                     )}
                   
                     <label>Ciudad de Residencia *<span data-tooltip-id="tooltip-ciudadResidenciaaccionista" className="tooltip-icon" > ℹ️ </span></label>
