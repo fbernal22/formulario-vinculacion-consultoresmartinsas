@@ -514,13 +514,13 @@ const App = () => {
 
         if (name === "paisResidenciaaccionista") {
           const departamentosData = data[value]?.departamentos || {};
-          setdepartamentoResidenciaaccionista(Object.keys(departamentosData));
-          setciudadResidenciaaccionista([]);
+          setDepartamentosAccionista(Object.keys(departamentosData));
+          setCiudadesAccionista([]);
         }
         
         if (name === "departamentoResidenciaaccionista") {
           const ciudadesData = data[formData.paisResidenciaaccionista]?.departamentos[value] || [];
-          setciudadResidenciaaccionista(ciudadesData);
+          setCiudadesAccionista(ciudadesData);
         }
 
         if (name === "paisExpedicion") {
@@ -568,15 +568,15 @@ const App = () => {
             setCiudades(ciudadesData);
         }
 
-        if (name === "paisResidenciaaccionistapj") {
+        if (name === "paisResidenciaaccionista") {
           const departamentosData = data[value]?.departamentos || {};
-          setdepartamentoResidenciaaccionistapj(Object.keys(departamentosData));
-          setciudadResidenciaaccionistapj([]);
+          setDepartamentos(Object.keys(departamentosData));
+          setCiudades([]);
         }
 
-        if (name === "ciudadResidenciaaccionistapj") {
+        if (name === "departamentoResidenciaaccionista") {
             const ciudadesData = data[prevData.paisResidenciaaccionista]?.departamentos[value] || [];
-            setciudadResidenciaaccionistapj(ciudadesData);
+            setCiudades(ciudadesData);
         }
 
         // Manejo de "Cotiza en la Bolsa"
@@ -1903,12 +1903,11 @@ if (procesoExitoso) {
 
                     {formData.paisResidenciaaccionista === "Colombia" && (
                       <>
-                        <label>Departamento de Residencia *</label>
+                        <label>Departamento de Residencia</label>
                         <select
                           name="departamentoResidenciaaccionista"
                           value={formData.departamentoResidenciaaccionista}
                           onChange={handleChange}
-                          required
                         >
                           <option value="">Seleccione un departamento</option>
                           {departamentosAccionista.map((dep) => (
