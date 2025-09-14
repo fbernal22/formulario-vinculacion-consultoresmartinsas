@@ -5,8 +5,6 @@ import logo from "./assets/logo.png";
 import axios from "axios";
 import imagenExito from "./assets/Proceso-finalizados.png";
 
-
-
 const API_URL = "https://backend-vinculacion.onrender.com";
 
 // Datos de países, departamentos y ciudades
@@ -241,10 +239,9 @@ const data = {
 
 };
 
-
 async function enviarCorreo(destinatario, asunto, mensaje) {
   try {
-    const response = await fetch("/enviar-correo", {
+    const response = await fetch(`${API_URL}/enviar-correo`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ destinatario, asunto, mensaje })
@@ -266,14 +263,12 @@ const generateTransactionId = () => {
   return `TX-${timestamp}-${randomNum}`; // Formato: TX-123456-7890
 };
 
-
 const App = () => {
 
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState({
     fechadediligenciamiento:"",
-    Contraparte:"",
-    tipodecontraparte:"",
+    TipodeCliente:"",
     Proceso:"",
     tipopersona: "",
     nombreCompleto: "",
@@ -400,16 +395,14 @@ const App = () => {
     }));
   }, []);
 
-
   const verificarDocumento = () => {
     if (formData.numeroDocumento && formData.numeroDocumento.startsWith("1032")) {
       alert("Número de documento no permitido.");
-  }
+      return false;
+    }
+    // válido
+    console.log("✅ Número de documento válido, continuando con el envío...");
     return true;
-      // Si el número es válido, continuar con el proceso normal
-  alert("✅ Formulario enviado correctamente.");
-  console.log("✅ Número de documento válido, continuando con el envío...");
-
   };
 
   const opcionesTipoContraparte = {
@@ -537,10 +530,15 @@ const App = () => {
         const today = new Date().toISOString().split("T")[0];
 
         if (["fechadediligenciamiento", "fechadevinculacionalcargo", "fechadedesvinculacioncargo"].includes(name)) {
-          if (value >= today) {
-            return;
+          if (value > today) {
+            setErrores(prev => ({ ...prev, [name]: "La fecha no puede ser futura" }));
+            return prevData; // <- importante: no rompas el setState
+          } else {
+            // limpiar error si estaba
+            const { [name]: _, ...rest } = errores;
+            setErrores(rest);
           }
-        }        
+        }  
 
         if (name === "correoElectronico") {
           const email = newValue.toLowerCase();
@@ -607,26 +605,21 @@ const App = () => {
             }
 
             // Si cotiza en la bolsa, solo validar que no pase del 100%
-            if (prevData.accionista.participacion === "Sí") {
-                if (totalPorcentaje > 100) {
-                    alert("El porcentaje total no puede superar el 100%.");
-                    return prevData;
-                }
-            } else {
-                // Si NO cotiza, exigir que sea exactamente 100%
-                if (totalPorcentaje > 100) {
-                    alert("El porcentaje total no puede exceder el 100%.");
-                    return prevData;
-                }
-                if (totalPorcentaje < 100) {
-                    alert("La suma total de Participación Accionaria debe ser exactamente 100%.");
-                    return prevData;
-                }
-            }
+            if (name === "participacion") {
+              const nuevo = parseFloat(value) || 0;
 
-            return {
-                ...prevData,
-                [name]: value
+              const pn = Array.isArray(prevData.accionistasPN) ? prevData.accionistasPN : [];
+              const pj = Array.isArray(prevData.accionistasPJ) ? prevData.accionistasPJ : [];
+
+              const totalOtros = [...pn, ...pj].reduce((acc, a) => acc + (parseFloat(a.participacion) || 0), 0);
+              const total = nuevo + totalOtros;
+
+              if (total > 100) {
+                alert("El porcentaje total no puede superar el 100%.");
+                return prevData;
+              }
+
+              return { ...prevData, [name]: value };
             };
         }
 
@@ -660,12 +653,12 @@ const App = () => {
       if (!formData.fechadediligenciamiento) {
         erroresTemp.fechadediligenciamiento = "Ingrese la fecha de diligenciamiento";
       }
-      if (!formData.Contraparte) {
-        erroresTemp.Contraparte = "Seleccione una contraparte";
-      }
-      if (!formData.tipodecontraparte) {
-        erroresTemp.tipodecontraparte = "Seleccione el tipo de contraparte";
-      }
+      //if (!formData.Contraparte) {
+      //  erroresTemp.Contraparte = "Seleccione una contraparte";
+      //}
+      //if (!formData.tipodecontraparte) {
+      //  erroresTemp.tipodecontraparte = "Seleccione el tipo de contraparte";
+      //}
       if (!formData.Proceso) {
         erroresTemp.Proceso = "Seleccione un proceso";
       }
@@ -906,28 +899,9 @@ const App = () => {
   };
 
   const manejarCambio = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
-
-  const manejarEnvio = async (e) => {
-    e.preventDefault();  // Evita que el formulario recargue la página
-
-    try {
-      // Enviar los datos del formulario al backend
-      const respuesta = await axios.post(
-          "https://backend-vinculacion.onrender.com/guardar-excel",
-          formData
-      );
-
-      alert(respuesta.data.mensaje); // Mensaje de éxito
-      console.log("📂 Datos guardados en Excel correctamente");
-  } catch (error) {
-      console.error("❌ Error al guardar en Excel:", error);
-      alert("❌ Error al enviar los datos");
-  }
-};
-
-
 
   const validarNumeroDocumento = (tipoDocumento, valor) => {
     if (tipoDocumento === "Pasaporte") {
@@ -948,71 +922,62 @@ const App = () => {
   };
 
   const handleSubmit = async (e) => {
-      e.preventDefault();
+    e.preventDefault();
 
-      if ((formData.tipoPersona === "PN" && !formData.numeroDocumento) ||
-          (formData.tipoPersona === "PJ" && !formData.numeroNIT)) {
-        alert("Por favor, ingrese su número de documento.");
-        return;
-      }
+    if (!verificarDocumento()) return;
 
-      const numeroDocumento = formData?.numeroDocumento || "Desconocido";
-
-      try {
-          await enviarCorreo(formData.correoElectronico, "Proceso Finalizado", "Tu proceso de vinculación ha sido completado con éxito.");
-          await enviarCorreo("fabernal9722@gmail.com", "Nuevo Registro Completado", 
-              `El usuario con número de documento ${numeroDocumento} ha finalizado el proceso.`);
-          console.log("📧 Correos de confirmación enviados correctamente");
-      } catch (error) {
-          console.error("❌ Error enviando correos de confirmación:", error);
-      }
-
-      try {
-          await enviarCorreo("fabernal9722@gmail.com", "Intento bloqueado", 
-              `Se ha intentado registrar un número de documento bloqueado: ${numeroDocumento}.`);
-          console.log("📧 Correo de alerta enviado correctamente");
-      } catch (error) {
-          console.error("❌ Error enviando correo de alerta:", error);
-      }
-
-      try {
-          // Guardar en Excel
-          const respuestaExcel = await axios.post("https://backend-vinculacion.onrender.com/guardar-excel", formData);
-          alert(respuestaExcel.data.mensaje);
-          
-          console.log("📂 Datos guardados en la Base de Datos correctamente");
-
-      } catch (error) {
-          console.error("❌ Error al guardar en Excel:", error);
-      }
-
-      console.log("🚀 handleSubmit se ejecutó correctamente!");
-
-      // ✅ En lugar de un alert, activamos la pantalla de éxito
-      setProcesoExitoso(true);
-  };
-
-
-  const handleFinancialChange = (e) => {
-    const { name, value } = e.target;
-    const rawValue = value.replace(/\D/g, ""); // Elimina caracteres no numéricos
-    const numericValue = parseInt(rawValue || 0); // Convierte a número
-  
-    // Nuevo objeto de estado con el valor actualizado
-    const updatedFormData = { ...formData, [name]: `$ ${numericValue.toLocaleString("es-CO")}` };
-  
-    // Si el campo actualizado es "activos" o "pasivos", recalcula patrimonio
-    if (name === "activos" || name === "pasivos") {
-      const activos = parseInt(updatedFormData.activos.replace(/\D/g, "")) || 0;
-      const pasivos = parseInt(updatedFormData.pasivos.replace(/\D/g, "")) || 0;
-      updatedFormData.patrimonioNeto = `$ ${(activos - pasivos).toLocaleString("es-CO")}`;
+    if ((formData.tipoPersona === "PN" && !formData.numeroDocumento) ||
+        (formData.tipoPersona === "PJ" && !formData.numeroNIT)) {
+      alert("Por favor, ingrese su número de documento.");
+      return;
     }
-  
-    setFormData(updatedFormData);
+
+    const numeroDocumento = formData?.numeroDocumento || "Desconocido";
+    try {
+      await enviarCorreo(formData.correoElectronico, "Proceso Finalizado", "Tu proceso de vinculación ha sido completado con éxito.");
+      await enviarCorreo("fabernal9722@gmail.com", "Nuevo Registro Completado", 
+        `El usuario con número de documento ${numeroDocumento} ha finalizado el proceso.`);
+    } catch (error) {
+      console.error("❌ Error enviando correos de confirmación:", error);
+    }
+
+    try {
+      const respuestaExcel = await axios.post(`${API_URL}/guardar-excel`, formData);
+      alert(respuestaExcel.data.mensaje);
+    } catch (error) {
+      console.error("❌ Error al guardar en Excel:", error);
+      alert("❌ Error al guardar en Excel.");
+      return;
+    }
+
+    setProcesoExitoso(true);
   };
 
-  const totalSteps = 7;
-  const progress = (step / totalSteps) * 100; // 🔹 Cálculo dinámico del progreso
+const handleFinancialChange = (e) => {
+  const { name, value } = e.target;
+  const raw = (value ?? "").replace(/\D/g, "");
+  const numeric = parseInt(raw || "0", 10);
+
+  setFormData((prev) => {
+    // Construimos el siguiente estado a partir del previo
+    const next = { ...prev, [name]: `$ ${numeric.toLocaleString("es-CO")}` };
+
+    // Si cambian activos o pasivos, recalculamos patrimonioNeto
+    if (name === "activos" || name === "pasivos") {
+      const activosNum =
+        parseInt((next.activos || "").toString().replace(/\D/g, ""), 10) || 0;
+      const pasivosNum =
+        parseInt((next.pasivos || "").toString().replace(/\D/g, ""), 10) || 0;
+
+      next.patrimonioNeto = `$ ${(activosNum - pasivosNum).toLocaleString("es-CO")}`;
+    }
+
+    return next;
+  });
+};
+
+    const totalSteps = sections.length;
+    const progress = ((step + 1) / totalSteps) * 100;
 
   const enviarFormulario = (e) => {
       e.preventDefault(); // Evita la recarga de la página
@@ -1026,21 +991,20 @@ const App = () => {
   };
 
   // Modificación en el return para mostrar la pantalla de éxito
-if (procesoExitoso) {
-  return (
-      <div className="success-container">
-          <h2>¡Proceso de Vinculación Exitoso!</h2>
-          <img src={imagenExito} alt="Éxito" />
-          <p>Gracias por completar el proceso.</p>
-      </div>
-  );
-}
+  if (procesoExitoso) {
+    return (
+        <div className="success-container">
+            <h2>¡Proceso de Vinculación Exitoso!</h2>
+            <img src={imagenExito} alt="Éxito" />
+            <p>Gracias por completar el proceso.</p>
+        </div>
+    );
+  }
 
   return (
      
     
     <div className="form-container">
-      <form onSubmit={manejarEnvio}>
       <div className="top-bar">
       <img src={logo} alt="Logo Consultoría" className="form-logo" />
         <h1></h1>
@@ -1057,7 +1021,7 @@ if (procesoExitoso) {
       <div className="form-header">
       <h2>{sections[step]}</h2>
       </div>
-      <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate onKeyDown={(e)=>{ if(e.key==='Enter' && step!==sections.length-1) e.preventDefault(); }}>
 
         {/* Sección 1: Información Inicial */}
         {step === 0 && (  
@@ -1082,6 +1046,7 @@ if (procesoExitoso) {
             Se debe relacionar la fecha de diligenciamiento de este formulario
           </Tooltip>
 
+          {/*
           <label>
             Contraparte* <span data-tooltip-id="tooltip-contraparte" className="tooltip-icon"> ℹ️ </span>
           </label>
@@ -1119,7 +1084,8 @@ if (procesoExitoso) {
           <Tooltip id="tooltip-tipodecontraparte" place="top" effect="solid">
             Se debe relacionar el tipo de la contraparte a la que pertenezca.
           </Tooltip>
-
+          */}
+          
           <label>
             Proceso* <span data-tooltip-id="tooltip-Proceso" className="tooltip-icon"> ℹ️ </span>
           </label>
@@ -1153,17 +1119,36 @@ if (procesoExitoso) {
               value={formData.tipoPersona}
               onChange={(e) => {
                 const tipoPersona = e.target.value;
-                setFormData({
-                  ...formData,
+                setFormData(prev => ({
+                  ...prev,
                   tipoPersona,
                   tipoDocumento: tipoPersona === "PJ" ? "NIT" : "",
-                  razonSocial: tipoPersona === "PJ" ? "" : formData.razonSocial,
-                  numeroNIT: tipoPersona === "PJ" ? "" : formData.numeroNIT,
-                  fechaConstitucion: tipoPersona === "PJ" ? "" : formData.fechaConstitucion,
-                });
-
-
+                  // Si cambia a PJ, limpia campos de PN; si cambia a PN, limpia los de PJ
+                  ...(tipoPersona === "PJ"
+                    ? {
+                        nombreCompleto: "",
+                        fechaNacimiento: "",
+                        paisNacimiento: "",
+                        departamentoNacimiento: "",
+                        ciudadNacimiento: "",
+                        fechaExpedicion: "",
+                        paisExpedicion: "",
+                        departamentoExpedicion: "",
+                        ciudadExpedicion: "",
+                        numeroDocumento: "",
+                        razonSocial: prev.razonSocial || "",
+                        numeroNIT: prev.numeroNIT || "",
+                        fechaConstitucion: prev.fechaConstitucion || "",
+                      }
+                    : {
+                        razonSocial: "",
+                        numeroNIT: "",
+                        fechaConstitucion: "",
+                        numeroDocumento: prev.numeroDocumento || "",
+                      })
+                }));
               }}
+
               required
             >
               <option value="">Seleccione</option>
@@ -1221,7 +1206,7 @@ if (procesoExitoso) {
                   value={formData.numeroDocumento}
                   onChange={(e) => {
                     const nuevoValor = validarNumeroDocumento(formData.tipoDocumento, e.target.value);
-                    setFormData({ ...formData, numeroDocumento: nuevoValor });
+                    setFormData(prev => ({ ...prev, numeroDocumento: nuevoValor }));
                   }}
                   maxLength="15"
                   required
@@ -1382,9 +1367,7 @@ if (procesoExitoso) {
 
               </>
             )}
-
-
-          
+        
             {/* Campos para Persona Jurídica */}
             {formData.tipoPersona === "PJ" && (
               <>
@@ -1419,28 +1402,21 @@ if (procesoExitoso) {
                 <Tooltip id="tooltip-tipoDocumento" place="top" effect="solid"> Por favor seleccione el tipo de documento de identidad de la empresa. </Tooltip>
 
                 {/* Mostrar los campos solo si selecciona "Si" */}
-                {formData.recibeotrosingresos === "SE" && (
-                  <>
-
-
-                    <label>Indique que Tipo de Identificacion de la Sociedad Extranjera*<span data-tooltip-id="tooltip-Valorotrosingresos" className="tooltip-icon" > ℹ️ </span></label>
-                    <input
-                      type="text"
-                      name="tipodeidentificaciondesociedad"
-                      value={formData.tipodeidentificaciondesociedad}
-                      onChange={(e) => {
-                        const rawValue = e.target.value.replace(/\D/g, ""); // Solo números
-                        const formattedValue = `$ ${parseInt(rawValue || 0).toLocaleString("es-CO")}`;
-                        setFormData({ ...formData, tipodeidentificaciondesociedad: formattedValue });
-                      }}
-                      maxLength="15"
-                      placeholder="$ 0"
-                      required
-                    />
+                    {formData.tipoDocumento === "SE" && (
+                      <>
+                        <label>Tipo de identificación (Sociedad Extranjera) *</label>
+                        <input
+                          type="text"
+                          name="tipodeidentificaciondesociedad"
+                          value={formData.tipodeidentificaciondesociedad || ""}
+                          onChange={(e) => setFormData(prev => ({ ...prev, tipodeidentificaciondesociedad: e.target.value }))}
+                          maxLength="40"
+                          required
+                        />
+                      </>
+                    )}
                     <Tooltip id="tooltip-Valorotrosingresos" place="top" effect="solid"> Por favor Diligencie el valor de los otros ingresos. </Tooltip>
 
-                  </>
-                )}
              
                 <label>Número NIT *<span data-tooltip-id="tooltip-numeroNIT" className="tooltip-icon" > ℹ️ </span></label>
                 <input
@@ -1448,8 +1424,8 @@ if (procesoExitoso) {
                   name="numeroNIT"
                   value={formData.numeroNIT}
                   onChange={(e) => {
-                    const value = e.target.value; // Permite números y letras
-                    setFormData({ ...formData, numeroNIT: value });
+                    const value = e.target.value;
+                    setFormData(prev => ({ ...prev, numeroNIT: value }));
                   }}
                   maxLength="15"
                   required
@@ -1493,15 +1469,15 @@ if (procesoExitoso) {
 
 
              
-                <label> Número de Documento Representante Legal* <span data-tooltip-id="tooltip-numeroDocumentorl" className="tooltip-icon" > ℹ️ </span></label>
+                <label> Número de Documento Representante Legal* </label>
                 <input
-                    type="text"
-                    name="numeroDocumentoRepresentante"
-                    value={formData.numeroDocumentoRepresentante}
-                    onChange={handleChange}
-                    required
-                    pattern={formData.tipoDocumentorl === "Pasaporte" ? "[A-Za-z0-9]+" : "\\d+"} 
-                    title={formData.tipoDocumentorl === "Pasaporte" ? "Solo se permiten letras y números" : "Solo se permiten números"}
+                  type="text"
+                  name="numeroDocumentorl"
+                  value={formData.numeroDocumentorl || ""}
+                  onChange={handleChange}
+                  required
+                  pattern={formData.tipoDocumentorl === "Pasaporte" ? "[A-Za-z0-9]+" : "\\d+"}
+                  title={formData.tipoDocumentorl === "Pasaporte" ? "Solo se permiten letras y números" : "Solo se permiten números"}
                 />
 
                 {errores.numeroDocumentorl && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.numeroDocumentorl}</span>)}            
@@ -1560,7 +1536,7 @@ if (procesoExitoso) {
                         max={new Date().toISOString().split("T")[0]}
                         required
                       />
-                      {errores.fechadevinculacionalcargo && (<span style={{ color: "red", fontSize: "12px", marginBottom: "20px", display: "block" }}>{errores.fechadediligenciamiento}</span>)}
+                      {errores.fechadedesvinculacioncargo && (<span style={{ color: "red", fontSize: "12px", marginBottom: "20px", display: "block" }}>{errores.fechadedesvinculacioncargo}</span>)}
                       <Tooltip id="tooltip-fechadevinculacionalcargo" place="top" effect="solid">Se debe relacionar la fecha de diligenciamiento de este formulario</Tooltip>
 
                       <label>Fecha de Desvinculación al cargo*<span data-tooltip-id="tooltip-fechadedesvinculacioncargo" className="tooltip-icon"> ℹ️ </span></label>
@@ -1677,7 +1653,7 @@ if (procesoExitoso) {
               onChange={(e) => {
                 const value = e.target.value;
                 if (/^\d*$/.test(value) && value.length <= 10) {
-                  setFormData({ ...formData, telefonoCelular: value });
+                setFormData(prev => ({ ...prev, telefonoCelular: value }));
                 }
               }}
               pattern="\d*"
@@ -2350,7 +2326,6 @@ if (procesoExitoso) {
                               updatedAccionistas[index].numeroDocumentopep = validarNumeroDocumento(accionista.tipoIdentificacionpj, e.target.value);
                               setAccionistasPJ(updatedAccionistas);
                             }}
-                            required
                             maxLength="15"
                             required
                           />
@@ -2524,7 +2499,7 @@ if (procesoExitoso) {
               name="actividadEconomica"
               value={formData.actividadEconomica}
               onChange={(e) =>
-                setFormData({ ...formData, actividadEconomica: e.target.value })
+                setFormData(prev => ({ ...prev, actividadEconomica: e.target.value }))
               }
               required
             >
@@ -3039,7 +3014,7 @@ if (procesoExitoso) {
               onChange={(e) => {
                 const rawValue = e.target.value.replace(/\D/g, ""); // Elimina todo excepto números
                 const formattedValue = `$ ${parseInt(rawValue || 0).toLocaleString("es-CO")}`;
-                setFormData({ ...formData, ingresosMensuales: formattedValue });
+                setFormData(prev => ({ ...prev, ingresosMensuales: formattedValue }));
               }}
               maxLength="20"
               placeholder="$ 0"
@@ -3056,13 +3031,12 @@ if (procesoExitoso) {
               value={formData.recibeotrosingresos}
               onChange={(e) => {
                 const recibeotrosingresos = e.target.value;
-                
-                setFormData({
-                  ...formData,
+                setFormData(prev => ({
+                  ...prev,
                   recibeotrosingresos,
-                  Valorotrosingresos: recibeotrosingresos === "Si" ? "" : "0", // Si es "No", deja en $0
-                  descrpcionotrosingresos: "",
-                });
+                  Valorotrosingresos: recibeotrosingresos === "Si" ? "" : "$ 0",
+                  descrpcionotrosingresos: recibeotrosingresos === "Si" ? "" : ""
+                }));
               }}
               required
             >
@@ -3088,7 +3062,7 @@ if (procesoExitoso) {
                   onChange={(e) => {
                     const rawValue = e.target.value.replace(/\D/g, ""); // Solo números
                     const formattedValue = `$ ${parseInt(rawValue || 0).toLocaleString("es-CO")}`;
-                    setFormData({ ...formData, Valorotrosingresos: formattedValue });
+                    setFormData(prev => ({ ...prev, Valorotrosingresos: formattedValue }));
                   }}
                   maxLength="20"
                   placeholder="$ 0"
@@ -3103,7 +3077,7 @@ if (procesoExitoso) {
                   type="text"
                   name="descrpcionotrosingresos"
                   value={formData.descrpcionotrosingresos}
-                  onChange={(e) => setFormData({ ...formData, descrpcionotrosingresos: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, descrpcionotrosingresos: e.target.value }))}
                   maxLength="200"
                   required
                 />
@@ -3123,7 +3097,7 @@ if (procesoExitoso) {
               onChange={(e) => {
                 const rawValue = e.target.value.replace(/\D/g, ""); // Elimina todo excepto números
                 const formattedValue = `$ ${parseInt(rawValue || 0).toLocaleString("es-CO")}`;
-                setFormData({ ...formData, egresosMensuales: formattedValue });
+                setFormData(prev => ({ ...prev, egresosMensuales: formattedValue }));
               }}
               maxLength="20"
               placeholder="$ 0"
@@ -3205,11 +3179,10 @@ if (procesoExitoso) {
               value={formData.sujetoaretencion}
               onChange={(e) => {
                 const sujetoaretencion = e.target.value;
-                
-                setFormData({
-                  ...formData,
-                  sujetoaretencion,
-                  ...(sujetoaretencion === "No" && {
+              setFormData(prev => ({
+                ...prev,
+                sujetoaretencion,
+                ...(sujetoaretencion === "No" && {
                     resolucionautoretenedor: "",
                     agenteretenedor: "",
                     responsableiva: "",
@@ -3219,7 +3192,7 @@ if (procesoExitoso) {
                     autoretenedor: "",
                     conceptoautoretenedor: "",
                   }),
-                });
+                }));
               }}
               required
             >
@@ -3351,12 +3324,11 @@ if (procesoExitoso) {
               name="Tienerendiminetofinanciero"
               value={formData.Tienerendiminetofinanciero}
               onChange={(e) => {
-                const Tienerendiminetofinanciero = e.target.value;
-                
-                setFormData({
-                  ...formData,
-                  Tienerendiminetofinanciero,
-                  ...(Tienerendiminetofinanciero === "No" && {
+                const Tienerendiminetofinanciero = e.target.value;   
+                setFormData(prev => ({
+                ...prev,
+                Tienerendiminetofinanciero,
+                ...(Tienerendiminetofinanciero === "No" && {
                     rendimientosfinancieros: "",
                     comision: "",
                     entidadfinancieradepagos: "",
@@ -3364,7 +3336,7 @@ if (procesoExitoso) {
                     plazodepagos: "",
                     fechaUltimaDeclaracion: ""
                   }),
-                });
+                }));
               }}
               required
             >
@@ -3388,7 +3360,7 @@ if (procesoExitoso) {
               onChange={(e) => {
                 const rawValue = e.target.value.replace(/\D/g, ""); // Elimina todo excepto números
                 const formattedValue = `$ ${parseInt(rawValue || 0).toLocaleString("es-CO")}`;
-                setFormData({ ...formData, rendimientosfinancieros: formattedValue });
+                setFormData(prev => ({ ...prev, rendimientosfinancieros: formattedValue }));
               }}
               maxLength="15"
               placeholder="$ 0"
@@ -3405,7 +3377,7 @@ if (procesoExitoso) {
               onChange={(e) => {
                 const rawValue = e.target.value.replace(/\D/g, ""); // Elimina todo excepto números
                 const formattedValue = `$ ${parseInt(rawValue || 0).toLocaleString("es-CO")}`;
-                setFormData({ ...formData, comision: formattedValue });
+                setFormData(prev => ({ ...prev, comision: formattedValue }));
               }}
               maxLength="15"
               placeholder="$ 0"
@@ -3422,17 +3394,16 @@ if (procesoExitoso) {
               name="informacionbancaria"
               value={formData.informacionbancaria}
               onChange={(e) => {
-                const informacionbancaria = e.target.value;
-                
-                setFormData({
-                  ...formData,
-                  informacionbancaria,
-                  ...(informacionbancaria === "No" && {
+                const informacionbancaria = e.target.value;   
+              setFormData(prev => ({
+                ...prev,
+                informacionbancaria,
+                ...(informacionbancaria === "No" && {
                     entidadfinancieradepagos: "",
                     numerodecuenta: "",
                     plazodepagos: "",
                   }),
-                });
+                }));
               }}
               required
             >
@@ -3459,23 +3430,31 @@ if (procesoExitoso) {
             
             <label>Numero de Cuenta</label>
             <input
-              type="number" 
+              type="text"
               name="numerodecuenta"
               value={formData.numerodecuenta}
-              onChange={handleChange}
-              maxLength="100"
-            />    
-
-
+              onChange={(e)=> {
+                const v = e.target.value.replace(/\D/g,'');
+                setFormData(prev=>({ ...prev, numerodecuenta: v }));
+              }}
+              inputMode="numeric"
+              pattern="\d*"
+              maxLength="20"
+            /> 
             
             <label>Plazo de Pagos "(en dias)"</label>
             <input
-              type="number" 
+              type="text"
               name="plazodepagos"
               value={formData.plazodepagos}
-              onChange={handleChange}
-              maxLength="100"
-            />    
+              onChange={(e)=> {
+                const v = e.target.value.replace(/\D/g,'');
+                setFormData(prev=>({ ...prev, plazodepagos: v }));
+              }}
+              inputMode="numeric"
+              pattern="\d*"
+              maxLength="20"
+            />  
 
               </>
             )},  
@@ -3487,13 +3466,12 @@ if (procesoExitoso) {
               name="productosfinancierosextranjeros"
               value={formData.productosfinancierosextranjeros}
               onChange={(e) => {
-                const productosfinancierosextranjeros = e.target.value;
-
-                setFormData({
-                  ...formData,
-                  productosfinancierosextranjeros,
-                  indicarcual: productosfinancierosextranjeros === "Si" ? "" : "N/A", // Si es "No", deja "N/A"
-                });
+                const productosfinancierosextranjeros = e.target.value;               
+              setFormData(prev => ({
+                ...prev,
+                productosfinancierosextranjeros,
+                indicarcual: productosfinancierosextranjeros === "Si" ? "" : "N/A",
+              }));
               }}
               required
             >
@@ -3516,7 +3494,7 @@ if (procesoExitoso) {
                   type="text"
                   name="indicarcual"
                   value={formData.indicarcual}
-                  onChange={(e) => setFormData({ ...formData, indicarcual: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, indicarcual: e.target.value }))}
                   maxLength="100"
                   required
                 />
@@ -3534,12 +3512,11 @@ if (procesoExitoso) {
               value={formData.transaccionesenelextranjero}
               onChange={(e) => {
                 const transaccionesenelextranjero = e.target.value;
-
-                setFormData({
-                  ...formData,
+                setFormData(prev => ({
+                  ...prev,
                   transaccionesenelextranjero,
-                  indiquecual1: transaccionesenelextranjero === "Si" ? "" : "N/A", // Si es "No", deja "N/A"
-                });
+                  indiquecual1: transaccionesenelextranjero === "Si" ? "" : "N/A",
+                }));
               }}
               required
             >
@@ -3561,7 +3538,7 @@ if (procesoExitoso) {
                 <select
                   name="indiquecual1"
                   value={formData.indiquecual1}
-                  onChange={(e) => setFormData({ ...formData, indiquecual1: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, indiquecual1: e.target.value }))}
                   required
                 >
                   <option value="">Seleccione</option>
@@ -3587,12 +3564,11 @@ if (procesoExitoso) {
               value={formData.responsabilidadfiscal}
               onChange={(e) => {
                 const responsabilidadfiscal = e.target.value;
-
-                setFormData({
-                  ...formData,
+                setFormData(prev => ({
+                  ...prev,
                   responsabilidadfiscal,
-                  pais: responsabilidadfiscal === "Si" ? "" : "N/A", // Si es "No", deja "N/A"
-                });
+                  pais: responsabilidadfiscal === "Si" ? "" : "N/A",
+                }));
               }}
               required
             >
@@ -3644,7 +3620,27 @@ if (procesoExitoso) {
             <select
               name="esPEP"
               value={formData.esPEP}
-              onChange={(e) => {setFormData({ ...formData, esPEP: e.target.value });}}
+              onChange={(e) => {
+                const esPEP = e.target.value;
+                setFormData(prev => ({
+                  ...prev,
+                  esPEP,
+                  ...(esPEP === "No" && {
+                    // limpiar todo lo de PEP si responde No
+                    nombredelpep: "",
+                    tipoDocumentopep: "",
+                    numeroDocumentopep: "",
+                    nombreentidad: "",
+                    cargoPEP: "",
+                    fechadevinculacionalcargo: "",
+                    fechadedesvinculacioncargo: "",
+                    fideicomitentepat: "",
+                    EntidadFiduciaria: "",
+                    entidadpublica: "",
+                    valoradministrado: ""
+                  })
+                }));
+              }}     
               required
             >
               <option value="">Seleccione</option>
@@ -3673,8 +3669,8 @@ if (procesoExitoso) {
 
                 <label>Tipo de Documento del PEP *<span data-tooltip-id="tooltip-tipoDocumentorl" className="tooltip-icon" > ℹ️ </span> </label>
                 <select
-                  name="tipoDocumentorl"
-                  value={formData.tipoDocumentorl}
+                  name="tipoDocumentopep"
+                  value={formData.tipoDocumentopep}
                   onChange={handleChange}
                   required
                 >
@@ -3692,13 +3688,18 @@ if (procesoExitoso) {
              
                 <label> Número de Documento del PEP* <span data-tooltip-id="tooltip-numeroDocumentorl" className="tooltip-icon" > ℹ️ </span></label>
                 <input
-                    type="text"
-                    name="numeroDocumentoRepresentante"
-                    value={formData.numeroDocumentoRepresentante}
-                    onChange={handleChange}
-                    required
-                    pattern={formData.tipoDocumentorl === "Pasaporte" ? "[A-Za-z0-9]+" : "\\d+"} 
-                    title={formData.tipoDocumentorl === "Pasaporte" ? "Solo se permiten letras y números" : "Solo se permiten números"}
+                  type="text"
+                  name="numeroDocumentopep"
+                  value={formData.numeroDocumentopep}
+                  onChange={(e) => {
+                    const v = formData.tipoDocumentopep === "Pasaporte"
+                      ? e.target.value.replace(/[^A-Za-z0-9]/g, "")
+                      : e.target.value.replace(/\D/g, "");
+                    setFormData(prev => ({ ...prev, numeroDocumentopep: v }));
+                  }}
+                  required
+                  pattern={formData.tipoDocumentopep === "Pasaporte" ? "[A-Za-z0-9]+" : "\\d+"}
+                  title={formData.tipoDocumentopep === "Pasaporte" ? "Solo se permiten letras y números" : "Solo se permiten números"}
                 />
 
                 {errores.numeroDocumentorl && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.numeroDocumentorl}</span>)}            
@@ -3737,7 +3738,7 @@ if (procesoExitoso) {
                   onChange={handleChange}
                   required
                 />
-                {errores.fechadevinculacionalcargo && (<span style={{ color: "red", fontSize: "12px", marginBottom: "20px", display: "block" }}>{errores.fechadediligenciamiento}</span>)}
+                {errores.fechadedesvinculacioncargo && (<span style={{ color: "red", fontSize: "12px", marginBottom: "20px", display: "block" }}>{errores.fechadedesvinculacioncargo}</span>)}
                 <Tooltip id="tooltip-fechadevinculacionalcargo" place="top" effect="solid">Se debe relacionar la fecha de diligenciamiento de este formulario</Tooltip>
 
                 <label>Fecha de Desvinculación al cargo*<span data-tooltip-id="tooltip-fechadedesvinculacioncargo" className="tooltip-icon"> ℹ️ </span></label>
@@ -3795,7 +3796,7 @@ if (procesoExitoso) {
                         onChange={(e) => {
                           const rawValue = e.target.value.replace(/\D/g, ""); // Elimina todo excepto números
                           const formattedValue = `$ ${parseInt(rawValue || 0).toLocaleString("es-CO")}`;
-                          setFormData({ ...formData, ingresosMensuales: formattedValue });
+                          setFormData(prev => ({ ...prev, valoradministrado: formattedValue }));
                         }}
                      
                         maxLength="20"
@@ -3826,14 +3827,26 @@ if (procesoExitoso) {
             <select
               name="datoscomerciales"
               value={formData.datoscomerciales}
-              onChange={handleChange}
+              onChange={(e) => {
+                const v = e.target.value;
+                setFormData(prev => ({
+                  ...prev,
+                  datoscomerciales: v,
+                  ...(v === "No" && {
+                    nombrerefcom: "",
+                    cargorefcom: "",
+                    telefonoCelularrefcom1: "",
+                    correoElectronicorefcom: ""
+                  })
+                }));
+              }}
               required
             >
               <option value="">Seleccione</option>
               <option value="Si">Sí</option>
               <option value="No">No</option>
             </select>
-            {errores.datoscomerciales && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.esPEP}</span>)}            
+            {errores.datoscomerciales && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.datoscomerciales}</span>)}            
             <Tooltip id="tooltip-datoscomerciales" place="top" effect="solid"> Por favor Diligencie el nombre de la razon social  o nombre de la empresa. </Tooltip>
 
 
@@ -3871,7 +3884,7 @@ if (procesoExitoso) {
                   onChange={(e) => {
                     const value = e.target.value;
                     if (/^\d*$/.test(value) && value.length <= 10) {
-                      setFormData({ ...formData, telefonoCelularrefcom1: value });
+                    setFormData(prev => ({ ...prev, telefonoCelularrefcom1: value }));
                     }
                   }}
                   pattern="\d*"
@@ -3902,14 +3915,26 @@ if (procesoExitoso) {
             <select
               name="datosfinancieros"
               value={formData.datosfinancieros}
-              onChange={handleChange}
+              onChange={(e) => {
+                const v = e.target.value;
+                setFormData(prev => ({
+                  ...prev,
+                  datosfinancieros: v,
+                  ...(v === "No" && {
+                    nombrereffin: "",
+                    cargoreffin: "",
+                    telefonoCelularrefcom: "",
+                    correoElectronicoreffin: ""
+                  })
+                }));
+              }}
               required
             >
               <option value="">Seleccione</option>
               <option value="Si">Sí</option>
               <option value="No">No</option>
             </select>
-            {errores.datosfinancieros && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.esPEP}</span>)}            
+            {errores.datosfinancieros && (<span style={{ color: "red", fontSize: "12px", marginTop: "0px", marginBottom: "20px", display: "block" }}>{errores.datosfinancieros}</span>)}            
             <Tooltip id="tooltip-datosfinancieros" place="top" effect="solid"> Por favor Diligencie el nombre de la razon social  o nombre de la empresa. </Tooltip>
 
 
@@ -3947,7 +3972,7 @@ if (procesoExitoso) {
                   onChange={(e) => {
                     const value = e.target.value;
                     if (/^\d*$/.test(value) && value.length <= 10) {
-                      setFormData({ ...formData, telefonoCelularrefcom: value });
+                    setFormData(prev => ({ ...prev, telefonoCelularrefcom: value }));
                     }
                   }}
                   pattern="\d*"
@@ -3988,7 +4013,7 @@ if (procesoExitoso) {
                   id="aceptaTerminos"
                   name="aceptaTerminos"
                   checked={formData.aceptaTerminos}
-                  onChange={(e) => setFormData({ ...formData, aceptaTerminos: e.target.checked })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, aceptaTerminos: e.target.checked }))}
                   required
                 />
                 <span className="slider round"></span>
@@ -4005,9 +4030,7 @@ if (procesoExitoso) {
                   type="checkbox"
                   name="autorizaConsultas"
                   checked={formData.autorizaConsultas}
-                  onChange={(e) =>
-                    setFormData({ ...formData, autorizaConsultas: e.target.checked })
-                  }
+                  onChange={(e) => setFormData(prev => ({ ...prev, autorizaConsultas: e.target.checked }))}
                   required
                 />
                 <span className="slider round"></span>
@@ -4024,9 +4047,7 @@ if (procesoExitoso) {
                   type="checkbox"
                   name="declaraVeracidad"
                   checked={formData.declaraVeracidad}
-                  onChange={(e) =>
-                    setFormData({ ...formData, declaraVeracidad: e.target.checked })
-                  }
+                  onChange={(e) => setFormData(prev => ({ ...prev, declaraVeracidad: e.target.checked }))}
                   required
                 />
                 <span className="slider round"></span>
@@ -4043,9 +4064,7 @@ if (procesoExitoso) {
                     type="checkbox"
                     name="declaracionpep"
                     checked={formData.declaracionpep}
-                    onChange={(e) =>
-                      setFormData({ ...formData, declaracionpep: e.target.checked })
-                    }
+                    onChange={(e) => setFormData(prev => ({ ...prev, declaracionpep: e.target.checked }))}
                     required
                   />
                   <span className="slider round"></span>
@@ -4076,18 +4095,13 @@ if (procesoExitoso) {
               Continuar
             </button>
           ) : (
-            <button type="submit" onClick={handleSubmit}>Enviar</button>
+            <button type="submit">Enviar</button>
 
           )}
-        </div>
-
-      </form>
+        </div>,
       </form>
     </div>
   );  
 
-
-
 };
-
 export default App;

@@ -1,81 +1,146 @@
-/* General */
+/* =========================
+   Base
+   ========================= */
 body {
-  background: linear-gradient(to bottom, #f4e9e3, #e5d1c3);
+  background: #b9c5d6;
   background-attachment: fixed;
   background-size: cover;
-  height: auto; /* ✅ Permite que el contenido crezca */
   margin: 0;
-  display: block; /* ✅ Evita que se desborde con flex */
-  padding: 20px 0; /* ✅ Agrega espacio arriba */
+  padding: 20px 0;
   font-family: "Poppins", sans-serif;
 }
 
-/* Contenedor del formulario */
+/* =========================
+   Contenedor del formulario
+   ========================= */
 .form-container {
   width: 100%;
   max-width: 600px;
-  margin: 100px auto; /* ✅ Agrega margen superior */
+  margin: 100px auto;
   padding: 40px;
-  background-color: #042b3a;       
+  background-color: #FFFFFF;
   border-radius: 12px;
-  box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
-  height: auto;
-  overflow: hidden; /* ✅ Evita desbordamiento inesperado */
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
 }
 
-/* Encabezado */
+/* =========================
+   Encabezado
+   ========================= */
 .form-header {
   text-align: center;
   margin-bottom: 20px;
   font-size: 22px;
   font-weight: bold;
-  color: #dc8b6c; /* Mantiene el color corporativo */
-  text-transform: uppercase; /* Le da un look más profesional */
-}
-
-.form-logo {
-  max-width: 50px;
-  height: auto;
-  margin-bottom: 6px;
-  margin-left: 30px;
+  color: #0B0D0E;
+  text-transform: uppercase;
 }
 
 .form-header h1 {
   font-size: 50px;
-  color: #042b3a;
+  color: #1F6BFF;
   margin: 0;
 }
 
-/* Campos del formulario */
+.form-logo {
+  max-width: 200px;
+  height: auto;
+  margin-bottom: -11px;
+  margin-left: 30px;
+}
+
+/* =========================
+   Campos del formulario
+   ========================= */
 .form-group {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   width: 100%;
-  max-width: 500px;
-  margin: 10px auto;
+  max-width: 550px;
+  margin: 10px auto 30px; /* incluye el margen inferior estándar */
 }
 
 label {
   font-size: 16px;
-  color: #dc8b6c;
+  color: #1F6BFF;
   font-weight: 500;
-  align-items: center;
-  margin-bottom: 5px; /* Agrega espacio entre el título y el input */
+  margin: 10px 0 5px;
+  text-align: left;
   display: block;
-  margin-top: 10px; /* ✅ Reduce espacio superior */
-  text-align: left; /* ✅ Alinea correctamente los textos */
-  font-family: "Poppins", sans-serif
-
 }
 
-input:focus, select:focus {
+/* Tamaño y estilo unificado para inputs/selects */
+input,
+select,
+textarea {
+  width: 100%;
+  max-width: 550px;
+  height: 50px;
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 2px solid #1F6BFF;
+  background-color: #dde0e4;
+  box-sizing: border-box;
+  display: block;              /* evita desajustes (no usar flex aquí) */
+  transition: all 0.3s ease-in-out;
+  text-transform: uppercase;
+  line-height: normal;
+}
+
+input[type="text"],
+input[type="date"],
+select {
+  /* misma base que arriba (sin duplicar propiedades) */
+}
+
+input[type="date"] {
+  appearance: none;            /* quita estilos del navegador */
+}
+
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+input::placeholder {
+  color: #0B0D0E;
+}
+
+/* Focus */
+input:focus,
+select:focus,
+textarea:focus {
   outline: none;
-  border-color: #ff9f68;
-  box-shadow: 0px 0px 10px rgba(255, 107, 53, 0.5);
+  border-color: #7C5CFF;
+  box-shadow: 0 0 10px rgba(47, 102, 204, 0.5);
 }
 
-/* Botones */
+/* =========================
+   Tooltips
+   ========================= */
+.tooltip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-left: 5px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+  background: #7C5CFF;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+.tooltip-icon:hover { transform: scale(1.2); }
+
+/* =========================
+   Botones
+   ========================= */
 .button-container {
   display: flex;
   justify-content: center;
@@ -84,48 +149,37 @@ input:focus, select:focus {
 
 button {
   width: 100%;
+  max-width: 400px;
   height: 45px;
-  font-size: 16px;
+  padding: 12px 20px;
+  font-size: 18px;
   font-weight: bold;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
+  text-transform: uppercase;
+  background: linear-gradient(45deg,  #1b61ec, #3872e6);
+  color: #fff;
+  margin-top: 30px;
+}
+
+button:hover {
+  /* ojo: background-color no acepta gradientes */
+  background: linear-gradient(45deg, #b9c5d6, #84a3e0);
+  color: #0B0D0E;
+  transform: scale(1.05);
 }
 
 .boton-continuar {
-  background-color: #dc8b6c;
+  /* conserva compatibilidad si usas esta clase en algún sitio */
+  background: #7C5CFF;
   color: #f4e9e3;
 }
 
-.boton-continuar:hover {
-  background-color: #dc8b6c;
-  color: #ffffff;
-}
-
-/* Tooltip (íconos de información) */
-.tooltip-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  margin-left: 5px;
-  padding: 0px;
-  font-size: 14px;
-  font-weight: bold;
-  color: white;
-  background: #51a3e9;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.tooltip-icon:hover {
-  transform: scale(1.2);
-}
-
-/* Mensajes de error */
+/* =========================
+   Estado de error
+   ========================= */
 .error-message {
   color: red;
   font-size: 12px;
@@ -133,259 +187,84 @@ button {
   display: block;
 }
 
-/* Espaciado entre el último campo y el botón */
-.input-field {
-  margin-bottom: 15px; /* Ajusta el margen para dar más separación */
-}
-
-/* Asegurar que todos los campos de entrada y select tengan el mismo tamaño */
-input[type="text"], input[type="date"], select {
-    width: 100%;
-    max-width: 550px; /* Ajuste estándar para todos */
-    padding: 10px;
-    font-size: 16px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    background-color: #f4e9e3;
-    height: 40px;
-    line-height: normal;
-    text-transform: uppercase;
-}
-
-/* Espaciado extra entre el último campo y el botón */
-.form-group {
-    margin-bottom: 30px;
-}
-
-/* Estilos del botón */
-button {
-    width: 100%;
-    max-width: 400px;
-    padding: 12px 20px;
-    font-size: 18px;
-    font-weight: bold;
-    background: linear-gradient(45deg, #dc8b6c, #ff9f68);
-    color: white;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    margin-top: 30px;
-}
-
-/* Cambia el color al pasar el mouse */
-button:hover {
-    background-color: linear-gradient(45deg, #ff6b35, #dc8b6c);
-    color:  #042b3a;
-    transform: scale(1.05)
-}
-
-/* 🔹 Ajuste global: TODOS los campos tendrán el mismo tamaño exacto */
-input, select, textarea {
-  width: 100%;
-  max-width: 550px; /* 🔥 Asegura que todos los elementos sean del mismo tamaño */
-  height: 50px; /* 🔥 Misma altura para todos */
-  padding: 12px; /* 🔥 Misma distancia interna */
-  font-size: 16px; /* 🔥 Mismo tamaño de fuente */
-  border-radius: 10px; /* 🔥 Bordes redondeados iguales */
-  border: 2px solid #dc8b6c; /* 🔥 Mismo borde */
-  background-color: #f4e9e3; /* 🔥 Mismo fondo */
-  box-sizing: border-box; /* 🔥 Evita que el padding afecte el tamaño */
-  display: flex; /* 🔥 Mantiene alineación adecuada */
-  transition: all 0.3s ease-in-out;
-  align-items: center;
-  justify-content: center;
-  text-transform: uppercase;
-}
-
-/* 🔹 Ajuste especial para el campo de fecha para que coincida exactamente */
-input[type="date"] {
-  width: 100%;
-  max-width: 550px;
-  height: 50px;
-  padding: 10px;
-  font-size: 16px;
-  border-radius: 8px;
-  border: 2px solid #dc8b6c;
-  background-color: #f4e9e3;
-  box-sizing: border-box;
-  display: flex;
-  align-items: left;
-  justify-content: left;
-  appearance: none; /* 🔥 Elimina estilos predeterminados del navegador */
-}
-
-/* 🔹 Ajustar el select para que coincida */
-select {
-  width: 100%;
-  max-width: 550px;
-  height: 50px;
-  padding: 10px;
-  font-size: 16px;
-  border-radius: 8px;
-  border: 2px solid #dc8b6c;
-  background-color: #f4e9e3;
-  box-sizing: border-box;
-  appearance: none; /* 🔥 Remueve estilos nativos */
-  -webkit-appearance: none;
-  -moz-appearance: none;
-}
-
-/* 🔹 Ajustar el contenedor de los campos */
-.form-group {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  width: 100%;
-  max-width: 550px;
-  margin: 10px auto;
-}
-
-input::placeholder {
-  color: #999; /* Color del texto del placeholder */
-  font-style: "Raleway", Sans-serif; /* Hace el placeholder en cursiva */
-}
-
-.form-group {
-  width: 100%;
-  max-width: 550px; /* Asegura que todos los contenedores tengan el mismo tamaño */
-  margin: 0 auto; /* Centra los elementos */
-}
-
-select {
-  appearance: none; /* Quita los estilos por defecto del navegador */
-  -webkit-appearance: none;
-  -moz-appearance: none;
-}
-
-input[type="date"] {
-  width: 100%;  /* Asegura que ocupe el mismo ancho */
-  max-width: 550px;
-  height: 50px;
-  padding: 10px;
-  font-size: 16px;
-  border-radius: 8px;
-  border: 2px solid #dc8b6c;
-  background-color: #f4e9e3;
-  box-sizing: border-box;
-  appearance: none; /* Elimina estilos predeterminados del navegador */
-}
-
-.date-container {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  max-width: 550px;
-}
-
-html, body {
-  overflow-y: auto !important; /* ✅ Permite desplazamiento */
-}
-
-/* 🔹 Contenedor de la barra superior */
+/* =========================
+   Barra superior y progreso
+   ========================= */
 .top-bar {
   width: 100%;
   height: 70px;
-  background-color: white;
-  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(28, 61, 209, 0.1);
   position: fixed;
-  top: 0;
-  left: 0;
+  top: 0; left: 0;
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 30px; /* 🔥 Espaciado ajustado */
+  padding: 10px 30px;
 }
 
-/* 🔹 Ajuste del logo */
 .logo {
   height: 50px;
   max-width: 120px;
   object-fit: contain;
 }
 
-/* 🔹 Contenedor central (barra de progreso + porcentaje + ID de transacción) */
 .progress-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-grow: 1;
-  max-width: 400px; /* 🔥 Ajusta el tamaño máximo */
-  gap: 25px; /* 🔥 Más separación entre los elementos */
+  max-width: 400px;
+  gap: 25px;
 }
 
-/* 🔹 Barra de progreso */
 .progress-container {
   width: 180px;
   height: 12px;
-  background-color: #e5d1c3;
+  background-color: #b9c5d6;
   border-radius: 10px;
   overflow: hidden;
   position: relative;
 }
 
-/* 🔹 Relleno de la barra de progreso */
 .progress-bar {
   height: 100%;
-  background-color: #042b3a;
+  background-color: #7C5CFF;
   transition: width 0.4s ease-in-out;
 }
 
-/* 🔹 Texto del porcentaje */
-.progress-text {
-  font-weight: bold;
-  color:  #042b3a;
-  font-size: 16px;
-  white-space: nowrap;
-}
-
-/* 🔹 ID de transacción */
-.transaction-id {
-  font-weight: bold;
-  font-size: 16px;
-  color:  #042b3a;
-  white-space: nowrap;
-}
-
-/* 🔹 Texto "Proceso de Vinculación" */
+.progress-text,
+.transaction-id,
 .vinculacion-text {
-  font-size: 16px;
   font-weight: bold;
-  color:  #042b3a;
-  margin-right: 30px; /* 🔹 Ajusta la posición */
+  color: #7C5CFF;
+  font-size: 16px;
   white-space: nowrap;
 }
 
+.vinculacion-text { margin-right: 60px; }
 
-/* 🔹 Ajuste para que el contenido no se oculte debajo de la barra */
+/* Evita que el contenido quede bajo la barra fija */
 .content {
-  margin-top: 80px; /* Ajusta este valor si la barra cubre el contenido */
+  margin-top: 80px;
   padding: 20px;
 }
 
+/* Títulos intermedios */
 h4 {
-  display: block;
-  margin-block-start: 1.33em;
-  margin-block-end: 1.33em;
-  margin-inline-start: 0px;
-  margin-inline-end: 0px;
+  margin: 1.33em 0;  
   font-weight: bold;
-  unicode-bidi: isolate;
-  color:  #dc8b6c;
+  color: #1F6BFF;
 }
 
-
-/* Estilos para el overlay de fondo */
+/* =========================
+   Modal de confirmación
+   ========================= */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(0,0,0,0.5);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -398,7 +277,7 @@ h4 {
   padding: 20px;
   border-radius: 8px;
   text-align: center;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
   animation: slideIn 0.4s ease-in-out;
 }
 
@@ -414,7 +293,7 @@ h4 {
 
 .modal-content button {
   background: #27ae60;
-  color: white;
+  color: #fff;
   padding: 10px 20px;
   border: none;
   border-radius: 5px;
@@ -423,20 +302,24 @@ h4 {
   font-size: 16px;
 }
 
-.modal-content button:hover {
-  background: #219653;
-}
+.modal-content button:hover { background: #219653; }
 
+/* =========================
+   Animaciones
+   ========================= */
 @keyframes fadeIn {
   from { opacity: 0; }
-  to { opacity: 1; }
+  to   { opacity: 1; }
 }
 
 @keyframes slideIn {
   from { transform: translateY(-30px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  to   { transform: translateY(0);     opacity: 1; }
 }
 
+/* =========================
+   Pantalla de éxito
+   ========================= */
 .contenedor-exito {
   position: relative;
   width: 100vw;
@@ -445,7 +328,7 @@ h4 {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: #f5ede6; /* Fondo suave */
+  background-color: #f5ede6;
   overflow: hidden;
 }
 
@@ -462,7 +345,7 @@ h4 {
 .imagen-exito {
   width: 100vw;
   height: 100vh;
-  object-fit: cover; /* Hace que la imagen ocupe toda la pantalla */
+  object-fit: cover;
 }
 
 .texto-exito {
@@ -474,6 +357,8 @@ h4 {
   color: #2b2b2b;
 }
 
-
-
-
+/* =========================
+   Utilidades
+   ========================= */
+html, body { overflow-y: auto !important; }
+.input-field { margin-bottom: 15px; }
